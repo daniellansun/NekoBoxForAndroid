@@ -255,6 +255,42 @@ val syncFirstPartyClasses = tasks.register("syncFirstPartyClasses") {
     }
 }
 
+// android.jar stubs android.util.Base64 and org.json so they return null. Share-link
+// parsers call both, so unit tests load real implementations ahead of android.jar.
+// These jars are test-only: they are not app dependencies and are not in JaCoCo.
+val unitTestOrgJson = configurations.create("unitTestOrgJson") {
+    isCanBeResolved = true
+    isCanBeConsumed = false
+    isVisible = false
+}
+dependencies.add("unitTestOrgJson", "org.json:json:20240303")
+val compileAndroidBase64 = tasks.register<JavaCompile>("compileAndroidBase64") {
+    source = fileTree("src/testAndroidBase64/java") { include("**/*.java") }
+    classpath = files()
+    destinationDirectory.set(layout.buildDirectory.dir("android-base64/classes"))
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+    options.encoding = "UTF-8"
+}
+val androidBase64Jar = tasks.register<Jar>("androidBase64Jar") {
+    dependsOn(compileAndroidBase64)
+    from(compileAndroidBase64.flatMap { it.destinationDirectory })
+    archiveFileName.set("android-base64.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("android-base64"))
+    manifest {
+        attributes("Premain-Class" to "io.nekohasekai.sagernet.testutil.AndroidBase64Agent")
+    }
+}
+afterEvaluate {
+    tasks.withType<Test>().configureEach {
+        dependsOn(androidBase64Jar)
+        val agent = androidBase64Jar.flatMap { it.archiveFile }
+        classpath = files(agent) + unitTestOrgJson + classpath
+        val agentPath = agent.get().asFile.absolutePath
+        jvmArgs("-javaagent:$agentPath")
+    }
+}
+
 tasks.register<JacocoReport>("jacocoFirstPartyReport") {
     group = "verification"
     description = "ossDebug JVM unit-test coverage for first-party app classes only."

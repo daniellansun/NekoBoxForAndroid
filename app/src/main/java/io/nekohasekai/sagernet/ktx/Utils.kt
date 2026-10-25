@@ -81,11 +81,17 @@ val Throwable.readableMessage
  * https://android.googlesource.com/platform/prebuilts/runtime/+/94fec32/appcompat/hiddenapi-light-greylist.txt#9466
  */
 
-private val socketGetFileDescriptor = Socket::class.java.getDeclaredMethod("getFileDescriptor\$")
+// Looked up on first use. Resolving these Android-only methods while the file
+// initializes makes every helper in this file unloadable on a plain JVM.
+private val socketGetFileDescriptor by lazy {
+    Socket::class.java.getDeclaredMethod("getFileDescriptor\$")
+}
 val Socket.fileDescriptor get() = socketGetFileDescriptor.invoke(this) as FileDescriptor
 
-private val getInt = FileDescriptor::class.java.getDeclaredMethod("getInt$")
-val FileDescriptor.int get() = getInt.invoke(this) as Int
+private val fileDescriptorGetInt by lazy {
+    FileDescriptor::class.java.getDeclaredMethod("getInt\$")
+}
+val FileDescriptor.int get() = fileDescriptorGetInt.invoke(this) as Int
 
 suspend fun <T> HttpURLConnection.useCancellable(block: suspend HttpURLConnection.() -> T): T {
     return suspendCancellableCoroutine { cont ->
