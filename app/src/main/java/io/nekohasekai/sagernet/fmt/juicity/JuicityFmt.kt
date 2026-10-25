@@ -1,6 +1,6 @@
 package io.nekohasekai.sagernet.fmt.juicity
 
-import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.fmt.configSource
 import io.nekohasekai.sagernet.ktx.linkBuilder
 import io.nekohasekai.sagernet.ktx.toLink
 import io.nekohasekai.sagernet.ktx.urlSafe
@@ -70,7 +70,7 @@ fun buildSingBoxOutboundJuicityBean(bean: JuicityBean): Outbound_JuicityOptions 
             if (bean.sni.isNotBlank()) {
                 server_name = bean.sni
             }
-            insecure = bean.allowInsecure || DataStore.globalAllowInsecure || bean.pinnedCertchainSha256.isNotBlank()
+            insecure = bean.allowInsecure || configSource.globalAllowInsecure || bean.pinnedCertchainSha256.isNotBlank()
         }
 
         if (bean.pinnedCertchainSha256.isNotBlank()) {

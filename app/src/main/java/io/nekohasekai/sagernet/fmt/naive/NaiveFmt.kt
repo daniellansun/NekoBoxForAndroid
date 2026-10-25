@@ -1,6 +1,6 @@
 package io.nekohasekai.sagernet.fmt.naive
 
-import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.fmt.configSource
 import io.nekohasekai.sagernet.fmt.LOCALHOST
 import io.nekohasekai.sagernet.ktx.*
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -80,7 +80,7 @@ fun NaiveBean.buildNaiveConfig(port: Int): String {
         if (extraHeaders.isNotBlank()) {
             put("extra-headers", extraHeaders.split("\n").joinToString("\r\n"))
         }
-        if (DataStore.logLevel > 0) {
+        if (configSource.logLevel > 0) {
             put("log", "")
         }
         if (insecureConcurrency > 0) {
