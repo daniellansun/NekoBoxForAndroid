@@ -47,7 +47,11 @@ android {
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
+        // Resources stay on the unit-test classpath so Robolectric can inflate
+        // layouts. This flag does not enter the release APK.
+        unitTests.isIncludeAndroidResources = true
         unitTests.all {
+            it.maxHeapSize = "2g"
             it.extensions.configure(JacocoTaskExtension::class.java) {
                 isIncludeNoLocationClasses = true
                 excludes = listOf("jdk.internal.*")
@@ -105,6 +109,9 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 
     testImplementation("junit:junit:4.13.2")
+    // JVM UI/service tests only. Not an app dependency, so release builds
+    // do not package Robolectric.
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }
 
 // gomobile output (app/libs/libcore.aar) is gitignored. When it is missing, compile
@@ -182,6 +189,7 @@ val firstPartyClassExcludes = listOf(
 )
 
 tasks.withType(Test::class.java).configureEach {
+    maxHeapSize = "2g"
     extensions.configure(JacocoTaskExtension::class.java) {
         isIncludeNoLocationClasses = true
         excludes = listOf("jdk.internal.*")
