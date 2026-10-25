@@ -152,6 +152,7 @@ class Batch7RobolectricTest {
         ShadowTunBuilder.establishReturnsNull = false
         ShadowVpnService.reset()
         ShadowApplication.setProcessName(BuildConfig.APPLICATION_ID)
+        libcore.BoxInstance.stats = 0L
     }
 
     @Test(timeout = 180_000)
@@ -465,6 +466,7 @@ class Batch7RobolectricTest {
         DataStore.profileTrafficStatistics = true
         DataStore.acquireWakeLock = true
         DataStore.enableHevTun = false
+        libcore.BoxInstance.stats = 8L
         val proxy = Robolectric.buildService(ProxyService::class.java).create().get()
         val callback = object : ISagerNetServiceCallback.Stub() {
             override fun stateChanged(state: Int, profileName: String?, msg: String?) {}

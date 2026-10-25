@@ -164,9 +164,11 @@ JaCoCo 扫到 876 个第一方 `.class`（771 个 JaCoCo 类、207 个有可执�
 
 73 个 JVM 测试，0 失败（本批新增 15 个）。`./gradlew :app:jacocoFirstPartyReport`（`SKIP_HEV=1`）通过。
 
+**验收基线是 Test 干净复跑的行 6203/16314（38.02%）**。本仓库同一次命令的 XML 是 6205/16314。差 2 行，允许 ±2，标题用 Test 的 6203。下表指令、分支、方法、类来自本仓库那份 XML（当时行数是 6205）。Test 没有逐项重报这四项，只说指令大约 46736–46737。
+
 | 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第四批 |
 | --- | ---: | ---: | ---: | ---: | --- |
-| 行（LINE） | 6205 | 10109 | 16314 | **38.03%** | +449 行；分母 +34 |
+| 行（LINE） | 6203 | 10111 | 16314 | **38.02%** | +447 行；分母 +34 |
 | 指令（INSTRUCTION） | 46743 | 66472 | 113215 | **41.29%** | +3319；分母 +160 |
 | 分支（BRANCH） | 3827 | 5725 | 9552 | **40.06%** | +171；分母 +16 |
 | 方法（METHOD） | 1429 | 2467 | 3896 | **36.68%** | +176；分母 +29 |
@@ -174,9 +176,9 @@ JaCoCo 扫到 876 个第一方 `.class`（771 个 JaCoCo 类、207 个有可执�
 
 `syncFirstPartyClasses` 仍复制 1029 个 class 文件。有可执行行的源文件仍是 209 个。分母增加来自 DAO 覆盖口、默认规则文案、`settingsActivity`、WebView 锁路径和 `noProxiesFoundInFile`。
 
-上面这张表按 `12ece1f` 的干净构建核对。命令是 `SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport --offline`，73 个测试、0 失败。XML 根计数：行 6205/10109/16314，指令 46743/66472/113215，分支 3827/5725/9552，方法 1429/2467/3896，类 304/475/779。HTML 页脚写的是未覆盖/合计：指令 66,472 of 113,215，分支 5,725 of 9,552，行 10,109 of 16,314，方法 2,467 of 3,896，类 475 of 779。行覆盖 = 16314 − 10109 = 6205。同一份 CSV 的指令合计与 XML 相同（46743 与 66472）。把 CSV 的 `LINE_*` 加起来是 6253/10318（合计 16571），高于 XML，因为内部类把同一行算了多次。报告标题用 XML/HTML，不用 CSV 行合计。
+本仓库在 `12ece1f` 的干净构建（`SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport --offline`，73 个测试、0 失败）XML 根计数是：行 6205/10109/16314，指令 46743/66472/113215，分支 3827/5725/9552，方法 1429/2467/3896，类 304/475/779。HTML 页脚写的是未覆盖/合计：指令 66,472 of 113,215，分支 5,725 of 9,552，行 10,109 of 16,314，方法 2,467 of 3,896，类 475 of 779。行覆盖 = 16314 − 10109 = 6205。同一份 CSV 的指令合计与 XML 相同（46743 与 66472）。把 CSV 的 `LINE_*` 加起来是 6253/10318（合计 16571），高于 XML，因为内部类把同一行算了多次。报告标题用 XML/HTML 的行，不用 CSV 行合计。
 
-另一次干净复跑报过行 **6203/16314**、指令大约 46736–46737，分母在 113215 与 113223 之间；分支仍是 3827/9552。本机这次干净构建没有复现 6203，所以标题用这次报告印出的 6205/16314。差 1–2 行来自两条跟机器状态有关的路径：`Executable.killAll` 扫 `/proc`，某条 cmdline 读失败才走进 `IOException` 的 `continue`；`LocalResolverImpl.lookup` 把结果丢到 `Dispatchers.IO`，测试只 `delay(1500)`，解析变慢时成功或 NXDOMAIN 那几行赶不上这次 exec。指令分母从增量编译的 113223 变成干净编译的 113215（少 8），行合计仍是 16314。少掉的 8 条指令集中在三个包：`ui` 32797→32788，`group` 6020/7021→6018/7019，`database` 10921/11762→10924/11765。这是 Kotlin 增量编译和全量编译的字节码差异。
+Test 的干净复跑是行 **6203/16314**、指令大约 46736–46737，分母在 113215 与 113223 之间；分支仍是 3827/9552。这是第五批的验收基线。本仓库没有复现 6203，差 2 行，允许 ±2。差来自两条跟机器状态有关的路径：`Executable.killAll` 扫 `/proc`，某条 cmdline 读失败才走进 `IOException` 的 `continue`；`LocalResolverImpl.lookup` 把结果丢到 `Dispatchers.IO`，测试只 `delay(1500)`，解析变慢时成功或 NXDOMAIN 那几行赶不上这次 exec。指令分母从增量编译的 113223 变成干净编译的 113215（少 8），行合计仍是 16314。少掉的 8 条指令集中在三个包：`ui` 32797→32788，`group` 6020/7021→6018/7019，`database` 10921/11762→10924/11765。这是 Kotlin 增量编译和全量编译的字节码差异。以后各批都允许覆盖行数相对另一台干净机器 ±2，分母以当次 XML 为准。
 
 | 源文件 | 第四批 | 第五批 |
 | --- | ---: | ---: |
@@ -232,7 +234,29 @@ export SKIP_HEV=1                         # 单元测试不需要 libhev-socks5-
 
 `SKIP_HEV` 未设置时，`preBuild` 仍会按原逻辑调用 `buildHevTun`。四个产品风味共享 `src/main`；本报告固定 **ossDebug**。`preview` 只改已排除的 `BuildConfig.PRE_VERSION_NAME`。
 
-`app/libs/libcore.aar`（`libcore/build.sh` 的 gomobile 产物，被 gitignore）存在时，编译使用该 AAR。不存在时，`compileOnly` / `testImplementation` 使用 `app/src/libcoreStub/java` 打出的桩 jar，**不打进 APK**，也 **不计入** 覆盖率。桩只提供 `libcore.*` 与 `go.Seq` 的空实现，让 JVM 测试能够通过类型检查。
+`app/libs/libcore.aar`（`libcore/build.sh` 的 gomobile 产物，被 gitignore）存在时，打包使用该 AAR。不存在时，`compileOnly` / `testImplementation` 使用 `app/src/libcoreStub/java` 打出的桩 jar，**不打进 APK**，也 **不计入** 覆盖率。桩只提供 `libcore.*` 与 `go.Seq` 的空实现，让 JVM 测试能够通过类型检查。
+
+JVM 单元测试不能把真 AAR 留在 classpath 上。`implementation(fileTree("libs"))` 会把它带进 `testOssDebugUnitTest`。gomobile 类的 JNI 初始化在普通 JVM 上抛 `UnsatisfiedLinkError`，`ProfileManagerJvmTest` 会一直卡住。只挪走 `app/libs/libcore.aar` 不够：`libcore/build.sh` 还在 `libcore/libcore.aar` 留一份，`libcore/build/outputs/aar/` 里也可能有一份。
+
+单元测试或 JaCoCo 任务（任务名含 `unittest` / `jacoco`，或就是 `test` / `check`）在配置阶段把这三处现有的 `*.aar` 改名为旁边的 `*.aar.coverage-aside`，构建结束（含失败）改回。`assemble*`、`bundle*`、`install*`、`package*`、`build` 不动文件。同一次 Gradle 里既打包又跑单元测试时也不挪，并打出警告。`app/libs` 的 `fileTree` 排除 `*.coverage-aside`，备份文件不会被当成依赖。上次跑测试时进程被杀掉、只剩下备份的话，下一次任何配置会先把备份改回原名。`SKIP_LIBCORE_ASIDE=1` 关掉自动挪动。
+
+手动画法（自动逻辑没跑、或要跟打包任务放在同一次 Gradle 里时）：
+
+```bash
+aside() { [ -f "$1" ] && mv "$1" "$1.coverage-aside"; }
+restore() { [ -f "$1.coverage-aside" ] && mv "$1.coverage-aside" "$1"; }
+aside app/libs/libcore.aar
+aside libcore/libcore.aar
+for f in libcore/build/outputs/aar/*.aar; do aside "$f"; done
+SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport
+status=$?
+restore app/libs/libcore.aar
+restore libcore/libcore.aar
+for f in libcore/build/outputs/aar/*.aar.coverage-aside; do
+  [ -f "$f" ] && mv "$f" "${f%.coverage-aside}"
+done
+exit $status
+```
 
 单元测试还有两件只存在于测试 classpath 的替身，同样不进 APK、不进覆盖率分母：
 
@@ -269,36 +293,36 @@ export SKIP_HEV=1                         # 单元测试不需要 libhev-socks5-
 
 JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`SingBoxOptions.java` 约 4846 行源码，绝大多数是字段声明，JaCoCo 只记到 171 行。
 
-## 分包表（第六批之后）
+## 分包表（第七批之后）
 
-行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。数字来自第六批那次干净构建的 XML。`ui` 822/5183，`bg` 303/808，`widget` 178/518，`bg.proto` 106/419。`ui.profile` 仍是 0/1272。`ui` 指令合计是 32791（第五批干净构建是 32788）。
+行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。数字来自第七批这次干净构建的 XML（行 10734/16314）。`ui.profile` 975/1272，`ui` 1672/5183，`bg` 478/808，`widget` 271/518，`bg.proto` 292/419，`nb4a.ui` 180/307。分母相对第六批没有变。Test 复跑允许再少 0–2 行。
 
 | 包 | 行 | 指令 | 分支 | 方法 | 类 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `io.nekohasekai.sagernet.ui` | 822/5183 | 4618/32791 | 163/2568 | 185/1072 | 46/250 |
-| `io.nekohasekai.sagernet.ui.profile` | 0/1272 | 0/7943 | 0/339 | 0/255 | 0/42 |
-| `io.nekohasekai.sagernet.bg` | 303/808 | 1731/5537 | 83/394 | 97/218 | 21/46 |
-| `io.nekohasekai.sagernet.widget` | 178/518 | 952/3095 | 71/315 | 49/140 | 12/26 |
-| `io.nekohasekai.sagernet.bg.proto` | 106/419 | 789/3149 | 27/206 | 33/101 | 7/17 |
-| `moe.matsuri.nb4a.ui` | 127/307 | 795/2032 | 5/72 | 31/101 | 10/18 |
-| `io.nekohasekai.sagernet.ktx` | 387/561 | 3094/4403 | 161/230 | 131/220 | 16/25 |
-| `io.nekohasekai.sagernet.utils` | 294/407 | 1878/2752 | 182/303 | 60/91 | 12/22 |
-| `io.nekohasekai.sagernet.fmt.v2ray` | 837/939 | 5432/6096 | 550/817 | 64/67 | 6/6 |
-| `moe.matsuri.nb4a.utils` | 275/362 | 1791/2402 | 125/208 | 45/59 | 5/6 |
+| `io.nekohasekai.sagernet.ui` | 1672/5183 | 9450/32791 | 352/2568 | 368/1072 | 87/250 |
+| `io.nekohasekai.sagernet.ui.profile` | 975/1272 | 5963/7943 | 140/339 | 164/255 | 32/42 |
+| `io.nekohasekai.sagernet.bg` | 478/808 | 3008/5537 | 158/394 | 127/218 | 26/46 |
+| `io.nekohasekai.sagernet.widget` | 271/518 | 1536/3095 | 116/315 | 78/140 | 19/26 |
+| `io.nekohasekai.sagernet.bg.proto` | 292/419 | 2072/3149 | 103/206 | 72/101 | 13/17 |
+| `moe.matsuri.nb4a.ui` | 180/307 | 1079/2032 | 13/72 | 49/101 | 15/18 |
+| `io.nekohasekai.sagernet.ktx` | 431/561 | 3367/4403 | 168/230 | 149/220 | 18/25 |
+| `io.nekohasekai.sagernet.utils` | 301/407 | 1933/2752 | 196/303 | 63/91 | 12/22 |
+| `io.nekohasekai.sagernet.fmt.v2ray` | 838/939 | 5434/6096 | 551/817 | 64/67 | 6/6 |
+| `moe.matsuri.nb4a.utils` | 281/362 | 1816/2402 | 127/208 | 45/59 | 5/6 |
 | `moe.matsuri.nb4a.net` | 16/83 | 90/346 | 7/28 | 4/11 | 2/4 |
-| `io.nekohasekai.sagernet.fmt` | 886/952 | 5612/6148 | 546/639 | 111/140 | 11/14 |
-| `moe.matsuri.nb4a` | 309/374 | 1956/2703 | 220/384 | 183/206 | 147/152 |
-| `io.nekohasekai.sagernet.group` | 763/818 | 6077/7019 | 691/1011 | 61/79 | 13/22 |
-| `io.nekohasekai.sagernet` | 131/175 | 639/919 | 31/76 | 42/62 | 7/8 |
+| `io.nekohasekai.sagernet.fmt` | 887/952 | 5618/6148 | 547/639 | 112/140 | 11/14 |
+| `moe.matsuri.nb4a` | 312/374 | 1968/2703 | 222/384 | 184/206 | 148/152 |
+| `io.nekohasekai.sagernet.group` | 766/818 | 6091/7019 | 694/1011 | 61/79 | 13/22 |
+| `io.nekohasekai.sagernet` | 132/175 | 643/919 | 32/76 | 43/62 | 7/8 |
 | `io.nekohasekai.sagernet.plugin` | 6/46 | 34/283 | 5/32 | 2/12 | 1/3 |
-| `io.nekohasekai.sagernet.database` | 945/985 | 10998/11765 | 400/485 | 558/633 | 34/37 |
-| `moe.matsuri.nb4a.proxy.config` | 20/51 | 84/252 | 9/30 | 8/18 | 2/3 |
-| `io.nekohasekai.sagernet.database.preference` | 120/151 | 765/952 | 60/73 | 54/68 | 6/10 |
-| `moe.matsuri.nb4a.proxy.anytls` | 115/145 | 667/930 | 67/92 | 10/17 | 3/4 |
-| `moe.matsuri.nb4a.proxy.shadowtls` | 26/56 | 108/339 | 4/4 | 8/15 | 3/4 |
-| `com.github.shadowsocks.plugin.fragment` | 0/21 | 0/181 | 0/6 | 0/14 | 0/2 |
-| `moe.matsuri.nb4a.proxy` | 43/62 | 240/376 | 22/30 | 9/27 | 1/2 |
-| `moe.matsuri.nb4a.hevtun` | 32/47 | 317/372 | 7/10 | 5/6 | 2/2 |
+| `io.nekohasekai.sagernet.database` | 965/985 | 11191/11765 | 414/485 | 574/633 | 34/37 |
+| `moe.matsuri.nb4a.proxy.config` | 41/51 | 183/252 | 15/30 | 15/18 | 3/3 |
+| `io.nekohasekai.sagernet.database.preference` | 124/151 | 817/952 | 63/73 | 60/68 | 7/10 |
+| `moe.matsuri.nb4a.proxy.anytls` | 141/145 | 898/930 | 67/92 | 15/17 | 4/4 |
+| `moe.matsuri.nb4a.proxy.shadowtls` | 54/56 | 332/339 | 4/4 | 13/15 | 4/4 |
+| `com.github.shadowsocks.plugin.fragment` | 17/21 | 129/181 | 4/6 | 10/14 | 1/2 |
+| `moe.matsuri.nb4a.proxy` | 62/62 | 342/376 | 24/30 | 19/27 | 2/2 |
+| `moe.matsuri.nb4a.hevtun` | 35/47 | 336/372 | 7/10 | 6/6 | 2/2 |
 | `io.nekohasekai.sagernet.fmt.trojan_go` | 130/144 | 889/1002 | 78/120 | 11/13 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.hysteria` | 309/321 | 2094/2202 | 244/300 | 19/22 | 3/3 |
 | `moe.matsuri.nb4a.plugin` | 42/53 | 261/376 | 32/50 | 9/10 | 1/1 |
@@ -314,7 +338,7 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 | `io.nekohasekai.sagernet.fmt.mieru` | 50/54 | 292/309 | 10/12 | 8/10 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.http` | 39/42 | 261/282 | 23/32 | 8/11 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.juicity` | 78/81 | 524/561 | 46/70 | 11/14 | 3/3 |
-| `io.nekohasekai.sagernet.aidl` | 17/19 | 104/253 | 0/2 | 7/31 | 3/3 |
+| `io.nekohasekai.sagernet.aidl` | 17/19 | 122/253 | 0/2 | 13/31 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.shadowsocksr` | 85/87 | 589/614 | 16/20 | 11/13 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.naive` | 92/94 | 652/664 | 61/76 | 11/13 | 3/3 |
 | `com.github.shadowsocks.plugin` | 1/2 | 3/12 | 0/0 | 1/3 | 1/1 |
@@ -369,37 +393,44 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 
 ## 仍未覆盖最多的源文件
 
+第七批干净 XML。未覆盖行按源文件合计，不把内部类再加一遍。
+
 | 源文件 | 未覆盖行 | 已覆盖 |
 | --- | ---: | ---: |
-| `io.nekohasekai.sagernet.ui.ConfigurationFragment.kt` | 1450 | 137/1587 |
+| `io.nekohasekai.sagernet.ui.ConfigurationFragment.kt` | 1181 | 406/1587 |
 | `io.nekohasekai.sagernet.ui.BackupFragment.kt` | 501 | 5/506 |
-| `io.nekohasekai.sagernet.ui.GroupSettingsActivity.kt` | 304 | 12/316 |
-| `io.nekohasekai.sagernet.ui.AssetsActivity.kt` | 245 | 0/245 |
-| `io.nekohasekai.sagernet.ui.profile.ProfileSettingsActivity.kt` | 233 | 0/233 |
 | `io.nekohasekai.sagernet.ui.GroupFragment.kt` | 229 | 93/322 |
-| `io.nekohasekai.sagernet.ui.RouteSettingsActivity.kt` | 228 | 0/228 |
-| `io.nekohasekai.sagernet.ui.AppManagerActivity.kt` | 228 | 0/228 |
-| `io.nekohasekai.sagernet.ui.MainActivity.kt` | 185 | 138/323 |
-| `io.nekohasekai.sagernet.bg.proto.TrafficLooper.kt` | 130 | 56/186 |
-| `io.nekohasekai.sagernet.bg.proto.BoxInstance.kt` | 118 | 0/118 |
-| `io.nekohasekai.sagernet.bg.BaseService.kt` | 102 | 144/246 |
-| `io.nekohasekai.sagernet.bg.VpnService.kt` | 102 | 25/127 |
+| `io.nekohasekai.sagernet.ui.MainActivity.kt` | 181 | 142/323 |
+| `io.nekohasekai.sagernet.ui.SettingsPreferenceFragment.kt` | 163 | 104/267 |
+| `io.nekohasekai.sagernet.ui.AssetsActivity.kt` | 160 | 85/245 |
+| `io.nekohasekai.sagernet.ui.AppManagerActivity.kt` | 153 | 75/228 |
+| `io.nekohasekai.sagernet.ui.GroupSettingsActivity.kt` | 147 | 169/316 |
+| `io.nekohasekai.sagernet.ui.RouteSettingsActivity.kt` | 146 | 82/228 |
+| `io.nekohasekai.sagernet.ui.RouteFragment.kt` | 111 | 83/194 |
+| `io.nekohasekai.sagernet.ui.AppListActivity.kt` | 105 | 67/172 |
+| `io.nekohasekai.sagernet.ui.profile.ChainSettingsActivity.kt` | 99 | 55/154 |
+| `io.nekohasekai.sagernet.bg.proto.BoxInstance.kt` | 86 | 32/118 |
+| `io.nekohasekai.sagernet.bg.GuardedProcessPool.kt` | 69 | 6/75 |
+| `io.nekohasekai.sagernet.bg.BaseService.kt` | 61 | 185/246 |
+| `io.nekohasekai.sagernet.bg.VpnService.kt` | 23 | 104/127 |
 
-`ConfigBuilder.kt` 剩 1 行。`RawUpdater.kt` 剩 1 行。`SingBoxOptions.java` 剩 2 行。`JavaUtil.java` 87/97。`DataStore.kt` 219/219。`ConfigSource.kt` 56/56。`SubscriptionAccess.kt` 49/49。`ProfileManager.kt` 146/146。`ProxyEntity.kt` 344/366。`GroupUpdater.kt` 82/86。`Theme.kt` 70/70。`Utils.kt` 81/158。
+`ConfigBuilder.kt` 689/690。`RawUpdater.kt` 630/631。`SingBoxOptions.java` 169/171。`JavaUtil.java` 93/97。`DataStore.kt` 219/219。`ConfigSource.kt` 56/56。`SubscriptionAccess.kt` 49/49。`ProfileManager.kt` 146/146。`ProxyEntity.kt` 364/366。`GroupUpdater.kt` 85/86。`Theme.kt` 70/70。`Utils.kt` 114/158。`TrafficLooper.kt` 180/186。`SocksSettingsActivity.kt` 33/33。
 
 ## 第六批（UI、服务、WebView 锁）
 
 75 个 JVM 测试，0 失败（本批新增 2 个 Robolectric 测试）。`SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport --offline` 通过。`syncFirstPartyClasses` 仍复制 1029 个 class 文件。有可执行行的源文件仍是 209 个。
 
-| 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第五批干净构建 |
-| --- | ---: | ---: | ---: | ---: | --- |
-| 行（LINE） | 8198 | 8116 | 16314 | **50.25%** | +1993 行；分母不变 |
-| 指令（INSTRUCTION） | 58108 | 55111 | 113219 | **51.32%** | +11365；分母 +4 |
-| 分支（BRANCH） | 4335 | 5219 | 9554 | **45.37%** | +508；分母 +2 |
-| 方法（METHOD） | 1940 | 1956 | 3896 | **49.79%** | +511；分母不变 |
-| 类（CLASS） | 421 | 358 | 779 | **54.04%** | +117；分母不变 |
+**验收基线是 Test 在 `0186a71` 的干净复跑：行 8196/16314（50.24%），指令 58102/113219（51.32%），分支 4335/9554（45.37%）。** 相对 Test 的第五批 6203/16314，行 +1993，分母仍是 16314。本仓库同提交的干净 XML 是行 8198、指令 58108，比 Test 多 2 行、6 条指令，落在允许的 ±2 行里。分支两边都是 4335/9554。方法、类只在本仓库 XML 里数过（1940/3896、421/779）。
 
-XML 根计数就是上表。HTML 页脚是未覆盖/合计：指令 55,111 of 113,219，分支 5,219 of 9,554，行 8,116 of 16,314（覆盖 = 16314 − 8116 = 8198），方法 1,956 of 3,896，类 358 of 779。指令分母比第五批干净构建多 4，来自 `SagerNet.process` 的空进程名回退，不是测试抖动。行合计仍是 16314。
+| 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 来源 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 行（LINE） | 8196 | 8118 | 16314 | **50.24%** | Test 干净复跑 |
+| 指令（INSTRUCTION） | 58102 | 55117 | 113219 | **51.32%** | Test 干净复跑 |
+| 分支（BRANCH） | 4335 | 5219 | 9554 | **45.37%** | Test，与本仓库 XML 相同 |
+| 方法（METHOD） | 1940 | 1956 | 3896 | **49.79%** | 本仓库 XML（行 8198 那次） |
+| 类（CLASS） | 421 | 358 | 779 | **54.04%** | 本仓库 XML（行 8198 那次） |
+
+本仓库 HTML 页脚是未覆盖/合计：指令 55,111 of 113,219，分支 5,219 of 9,554，行 8,116 of 16,314（覆盖 = 16314 − 8116 = 8198），方法 1,956 of 3,896，类 358 of 779。指令分母比第五批本仓库 XML 多 4，来自 `SagerNet.process` 的空进程名回退，不是测试抖动。行合计仍是 16314。下面源文件比例来自这份 8198 行的 XML，和 Test 的 8196 可以差 1–2 行。
 
 | 源文件 | 第五批干净构建 | 第六批 |
 | --- | ---: | ---: |
@@ -433,15 +464,62 @@ XML 根计数就是上表。HTML 页脚是未覆盖/合计：指令 55,111 of 11
 - 订阅文案的默认 lambda 在沙箱里走 `app.getString` / `contentResolver`。`ConfigSource` 的 Toast、`PackageCache` 和非空插件 id 也在沙箱里跑过。`ProfileManager.getRules` 用默认的 `app.getString`。
 - `libcore` Go 仍没有接进 JaCoCo。没有克隆 `../../sing-box` 和 `../../libneko`。
 
-## 第七批
+## 第七批（档案设置页、VPN 组网、流量循环）
 
-1. **`ConfigurationFragment` 仍缺 1450 行**，`BackupFragment` 缺 501 行。列表点击、导入导出、搜索和测试连接还没走。`ui.profile` 仍是 0/1272，设置页 Activity 没有启动。
-2. **`BaseService` 缺 102 行**，主要是选中档案之后的 `onStartCommand`（`ProxyInstance.init`、`GuardedProcessPool`、连接成功）。`TrafficLooper` 缺 130 行，要一个已经 `init` 的 `proxy`。`BoxInstance` 仍是 0/118。
-3. **`VpnService.establishTun` 缺大约 100 行**。卡在隐藏 API `InetAddress.parseNumericAddress`。不改产品代码的话，需要在测试 classpath 上提供这个方法，或者让 `Builder.addAddress` 在沙箱里成功。
-4. **`Utils.kt` 81/158**。`getColour`、包变更广播、`scrollTo`、`crossFadeFrom` 已经跑过。剩下的是 `needReload` / `triggerFullRestart`（会走到 `ProcessPhoenix`）和 `parseNumericAddress` 的成功路径。
-5. **`JavaUtil` 87/97**。API 29 走了 `handleWebviewDir` 和 `Application.getProcessName()`。API 28 以下的反射进程名没有跑。
-6. **`GroupUpdater` 仍是 4 行**，`ProxyEntity` 仍是 22 行。假 DNS 的 `Network`、Trojan 的空白 `sni`、`settingIntent` 的 `Intent`、空 bean 和未知 `putBean` 还在。
-7. **`TileService` 0/49**。`libcore` Go 仍无 JaCoCo 入口，也没有 `_test.go`。
+77 个 JVM 测试，0 失败（本批新增 2 个 Robolectric 测试）。`SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport --offline` 通过，约 44 秒。`syncFirstPartyClasses` 仍复制 1029 个 class 文件。有可执行行的源文件仍是 209 个。分母相对第六批不变。`compileOssReleaseKotlin --offline` 通过。
+
+这次干净 XML / HTML 就是下表。Test 复跑允许比 10734 少 0–2 行。相对 Test 验收的第六批 8196/16314，行 **+2538**。相对本仓库第六批 XML 的 8198，是 +2536。
+
+| 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第六批 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 行（LINE） | 10734 | 5580 | 16314 | **65.80%** | +2538 行（相对 Test 的 8196）；分母不变 |
+| 指令（INSTRUCTION） | 73789 | 39430 | 113219 | **65.17%** | +15687（相对 Test 的 58102）；分母不变 |
+| 分支（BRANCH） | 4928 | 4626 | 9554 | **51.58%** | +593；分母不变 |
+| 方法（METHOD） | 2493 | 1403 | 3896 | **63.99%** | +553（相对本仓库 XML 的 1940） |
+| 类（CLASS） | 526 | 253 | 779 | **67.52%** | +105（相对本仓库 XML 的 421） |
+
+指令若改按本仓库第六批 XML 的 58108 相减是 +15681，少 6。这和允许的 ±2 行是同一类机器差，分母没有变。方法、类 Test 没有单报。
+
+HTML 页脚是未覆盖/合计：指令 39,430 of 113,219，分支 4,626 of 9,554，复杂度未覆盖 4,568、合计 8,871，行 5,580 of 16,314（覆盖 = 16314 − 5580 = 10734），方法 1,403 of 3,896，类 253 of 779。
+
+| 源文件 | 第六批本仓库 XML | 第七批 |
+| --- | ---: | ---: |
+| `ui` 包 | 822/5183 | **1672/5183** |
+| `ui.profile` 包 | 0/1272 | **975/1272** |
+| `widget` 包 | 178/518 | **271/518** |
+| `nb4a.ui` 包 | 127/307 | **180/307** |
+| `bg` 包 | 303/808 | **478/808** |
+| `bg.proto` 包 | 106/419 | **292/419** |
+| `bg/BaseService.kt` | 144/246 | **185/246** |
+| `bg/VpnService.kt` | 25/127 | **104/127** |
+| `bg.proto/TrafficLooper.kt` | 56/186 | **180/186** |
+| `bg.proto/BoxInstance.kt` | 0/118 | **32/118** |
+| `ktx/Utils.kt` | 81/158 | **114/158** |
+| `nb4a/utils/JavaUtil.java` | 87/97 | **93/97** |
+| `database/ProxyEntity.kt` | 344/366 | **364/366** |
+| `group/GroupUpdater.kt` | 82/86 | **85/86** |
+| `ui/profile/SocksSettingsActivity.kt` | 0/33 | **33/33** |
+
+### 本批的做法
+
+- 档案设置页在现有 Robolectric 沙箱里 `setup()` 后 `saveAndExit`。SOCKS 还点了协议和密码摘要。已有档案走删除、快捷方式、自定义 JSON、移动和返回时的未保存对话框。`UnsavedChangesDialogFragment` 必须先 `key()` 再 `show`，否则销毁时 `requireArguments` 会抛。
+- `VpnService.establishTun` 的产品逻辑没改。`Builder.addAddress` / `addRoute` / `addDnsServer` 仍会调用隐藏的 `InetAddress.parseNumericAddress`。只在 `Batch7RobolectricTest` 上注册三个测试影子：`ShadowTunBuilder` 让这三步和 `establish` 在沙箱里返回；`ShadowOsAddress` 提供 `Os.inet_pton`（绕过 LAN 的 `Subnet.fromString` 需要它；Robolectric 自带的 `ShadowOs` 是 final，这个影子只在这个测试类上替换它，并保留 `sysconf`）；`ShadowResolvingNetwork` 让 `Network.getAllByName` 返回 `127.0.0.1`。真 AAR 和 release 编译看不到这些类。
+- `establish` 返回 null 时仍抛 `NullConnectionException`。按应用代理的缺失包走 `NameNotFoundException`。`needBypassRootUid`（hysteria faketcp）这条没有造数据。
+- SOCKS 档案经 `ProxyService.onStartCommand` 走完 `BaseService` 的选中档案路径。`TrafficLooper` 在 `speedInterval > 0` 时启动。桩上的 `libcore.BoxInstance.queryStats` 改为读 `public static volatile long stats`，默认 0，所以第五批断言流量增量为 0 的测试仍然成立。只有这一轮服务测试把它设成 8。gomobile 的 `libcore.aar` 没有这个字段。
+- 假 DNS：`forceResolve` 在 `enableFakeDns` 且 VPN 模式下走 `underlyingNetwork.getAllByName`。影子网络把它解析成 `127.0.0.1`，`sni` 回填主机名。
+- `JavaUtil`：非默认进程名 `coveragebg` 走到 `setDataDirectorySuffix`；同一 JVM 里已持有的文件锁抛 `OverlappingFileLockException`（不是 `tryLock == null`）；锁路径被换成目录时走重建。API 27 的测试走反射版 `getProcessName`。`parseNumericAddress` 在这个测试类上因 `inet_pton` 影子可以成功。
+- 外部插件（trojan-go、mieru、naive、hysteria）的 `PluginManager.init` 仍抛 `PluginNotFoundException`。没有启动插件进程。
+
+## 第八批
+
+1. **`ConfigurationFragment` 仍缺 1181 行**，`BackupFragment` 仍是 5/506。列表点击、导入导出、搜索、测速 UI 没走。`GroupFragment` 93/322，`RouteFragment` 83/194，`SettingsPreferenceFragment` 104/267，`AboutFragment` 94/190，这几页相对第六批没有增加。
+2. **`MainActivity` 142/323**。导入订阅、菜单和要 `connection.service` 的测速成功路径还在。`AssetsActivity` 85/245，`AppManagerActivity` 75/228，`AppListActivity` 67/172，`RouteSettingsActivity` 82/228，`WebDAVSettingsActivity` 40/136，`ScannerActivity` 38/116：`onCreate` 跑过，点击和适配器大多没有。
+3. **`BoxInstance` 32/118**，`GuardedProcessPool` 6/75。外部插件要 `PluginManager.init` 返回可执行路径，`processes.start` 会拉起二进制。不要在 JVM 上 exec 插件。
+4. **`VpnService` 104/127**。剩下的主要是 `needBypassRootUid`（hysteria faketcp，且 `proxyApps == false` 时把全部应用塞进 individual）以及 hev 原生 `start` 成功。`establishTun` 的产品分支不要为了覆盖率改写。
+5. **`BaseService` 185/246**。`preInit` 在链路属性为 null 时跳过 `also`；`canReloadSelector` 在 `selectorGroupId < 0` 时直接 false。`UnknownHostException`、`PluginNotFoundException` 的部分文案还在。
+6. **`TrafficLooper` 180/186**，`ProxyInstance` 30/36。`Utils.kt` 114/158。不要调用 `triggerFullRestart`（`Runtime.exit`）。`JavaUtil` 93/97：类初始化那一行、`handleWebviewDir` 的外层 `catch`（92–93）、`tryLock == null` 的分支（133，同一 JVM 的 `tryLock` 抛 `OverlappingFileLockException` 而不是返回 null）。
+7. **`GroupUpdater` 85/86**。剩下的第 109 行是 `is TrojanBean -> sni = serverAddress`。`TrojanBean` 继承 `StandardV2RayBean`，父分支先匹配，这行到不了。不要调换 `when` 顺序：父分支只在 `security == "tls"` 时写 `sni`，Trojan 分支会无条件写，调换会改行为。`ProxyEntity` 364/366，剩下第 250 行（`requireBean` 的空 bean elvis，空 SOCKS 在拼错误信息时先 NPE）和第 543 行（`putBean` 的 `else -> error`，现有类型都进了前面的分支）。
+8. **`TileService` 0/49**，`SagerConnection` 49/99，`SubscriptionUpdater` 5/54，`LocalResolverImpl` 16/83，`GroupInterfaceAdapter` 1/51。`HevTunRuntime` 34/44：原生 `TProxyStartService` 成功之后的 `running = true`，以及 `stop()` 在 `running` 时的路径，JVM 上到不了。`libcore` Go 仍无 JaCoCo 入口，也没有 `_test.go`。
 
 ## `libcore` Go
 
@@ -471,12 +549,13 @@ XML 根计数就是上表。HTML 页脚是未覆盖/合计：指令 55,111 of 11
 ## 本次没有做的事
 
 - 没有升级已有的 app 依赖，没有改 release 签名。`org.json:json:20240303` 仍只在单元测试 classpath。Robolectric 4.14.1 只在 `testImplementation`，不进 release APK。
-- 没有跑仪器测试，没有改 `libcore.aar` 的 `compileOnly` 路径。libcore 桩仍不进 APK、不进覆盖率。
+- 没有跑仪器测试。libcore 桩仍是 `compileOnly` / `testImplementation`，不进 APK、不进覆盖率。JVM 测试任务会把 `app/libs/libcore.aar`、`libcore/libcore.aar`、`libcore/build/outputs/aar/*.aar` 临时改名，构建结束改回；`assemble*` 不改名。
 - 没有把 `libcore.aar` 或 JaCoCo HTML 提交进 git（`build/`、`app/libs/` 仍被忽略）。
 - 没有改 AnyTLS 的 fingerprint 赋值。测试按当前字节码断言 `utls.fingerprint == null`。
 - 没有把 Room 数据库放进单元测试。DAO 覆盖口为 null 时仍打开 Room。Robolectric 测试在 `super.onCreate()` 之前放上内存 DAO。
 - 没有改 WireGuard `mtu` 为空时 `clone()` 会 NPE 的现有行为。
 - 没有改 `handleWebviewDir` 在 API 28 以下直接返回的行为，也没有改锁文件路径的拼接。API 29 的沙箱跑过函数本体。
-- 没有改 `VpnService.establishTun` 的组网逻辑。`Builder.addAddress` 在 JVM 上因缺少隐藏 API 抛错，后半段没有覆盖。
+- 没有改 `VpnService.establishTun` 的组网逻辑。地址、路由、DNS 和 `establish` 能在第七批跑完，是因为测试影子替换了 `VpnService.Builder` 和 `Os.inet_pton`，只挂在 `Batch7RobolectricTest` 上。
+- 没有把 `TrojanBean` 的 `sni` 分支调到 `StandardV2RayBean` 前面。那一行在现有类型层次上到不了，调换会改变 `security != "tls"` 时的赋值。
 - 没有克隆 `../../sing-box` 和 `../../libneko`，没有把 Go 覆盖率并进 JaCoCo。
 - 没有调用 `triggerFullRestart`。那条路径会 `Runtime.exit`。

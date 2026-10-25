@@ -14,10 +14,14 @@ public final class BoxInstance {
 
     public void setV2rayStats(String outbounds) {}
 
+    /**
+     * Tests raise this when they need a non-zero delta. The gomobile method
+     * in {@code libcore.aar} does not use this field.
+     */
+    public static volatile long stats;
+
     public long queryStats(String tag, String direct) {
-        // Non-zero so JVM tests can execute the traffic-delta branches.
-        // The real gomobile method is still the one in libcore.aar.
-        return 8L;
+        return stats;
     }
 
     public boolean selectOutbound(String tag) {

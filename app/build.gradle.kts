@@ -60,9 +60,97 @@ android {
     }
 }
 
+// JVM unit tests load libcore classes. The gomobile AAR's JNI initializer throws
+// UnsatisfiedLinkError on a plain JVM and can hang ProfileManagerJvmTest. Packaging
+// tasks still consume the AAR. A unit-test-only invocation renames the known copies
+// out of the way for this build and puts them back when the build ends, including
+// after a failure. Backups stay next to the original so :app:clean cannot delete
+// them, and fileTree excludes the backup suffix.
+val libcoreCoverageAsideSuffix = ".coverage-aside"
+val libcoreAarsSetAside = mutableListOf<Pair<File, File>>()
+
+fun libcoreAarBackup(source: File) = File(source.parentFile, source.name + libcoreCoverageAsideSuffix)
+
+fun restoreLibcoreAar(source: File) {
+    val backup = libcoreAarBackup(source)
+    if (source.exists() || !backup.isFile) return
+    if (!backup.renameTo(source)) {
+        backup.copyTo(source, overwrite = false)
+        backup.delete()
+    }
+    logger.lifecycle("Restored ${source.path}")
+}
+
+fun knownLibcoreAars(): List<File> {
+    val found = mutableListOf(file("libs/libcore.aar"), rootProject.file("libcore/libcore.aar"))
+    val outputDir = rootProject.file("libcore/build/outputs/aar")
+    if (outputDir.isDirectory) {
+        outputDir.listFiles()?.forEach { child ->
+            if (!child.isFile) return@forEach
+            when {
+                child.name.endsWith(".aar") -> found += child
+                child.name.endsWith(".aar$libcoreCoverageAsideSuffix") ->
+                    found += File(outputDir, child.name.removeSuffix(libcoreCoverageAsideSuffix))
+            }
+        }
+    }
+    return found.distinctBy { it.absolutePath }
+}
+
+val requestedTaskLeaves = gradle.startParameter.taskNames.map { it.substringAfterLast(':').lowercase() }
+fun isJvmCoverageTask(name: String): Boolean {
+    return name.contains("jacoco") || name.contains("unittest") || name == "test" || name == "check"
+}
+fun packagesAndroidArtifact(name: String): Boolean {
+    return name == "build" ||
+        name.startsWith("assemble") ||
+        name.startsWith("bundle") ||
+        name.startsWith("install") ||
+        name.startsWith("package")
+}
+val jvmCoverageRequested = requestedTaskLeaves.any { isJvmCoverageTask(it) }
+val androidArtifactRequested = requestedTaskLeaves.any { packagesAndroidArtifact(it) }
+
+knownLibcoreAars().forEach { restoreLibcoreAar(it) }
+if (jvmCoverageRequested && !androidArtifactRequested && System.getenv("SKIP_LIBCORE_ASIDE") != "1") {
+    knownLibcoreAars().forEach { source ->
+        if (!source.isFile) return@forEach
+        val backup = libcoreAarBackup(source)
+        if (backup.exists()) {
+            logger.warn("Leaving ${source.path} in place; ${backup.name} already exists")
+            return@forEach
+        }
+        val moved = if (source.renameTo(backup)) {
+            true
+        } else {
+            source.copyTo(backup, overwrite = false)
+            val deleted = source.delete()
+            if (!deleted) backup.delete()
+            deleted
+        }
+        if (moved && backup.isFile && !source.exists()) {
+            libcoreAarsSetAside += source to backup
+            logger.lifecycle("Set aside ${source.path} so JVM tests use the libcore stub")
+        } else {
+            logger.warn("Could not set aside ${source.path}")
+        }
+    }
+    if (libcoreAarsSetAside.isNotEmpty()) {
+        gradle.buildFinished {
+            libcoreAarsSetAside.forEach { (source, _) -> restoreLibcoreAar(source) }
+        }
+    }
+} else if (jvmCoverageRequested && androidArtifactRequested) {
+    logger.warn(
+        "libcore.aar was left on the classpath because this invocation also packages an Android " +
+            "artifact. JVM unit tests can throw UnsatisfiedLinkError or hang. Run jacocoFirstPartyReport " +
+            "on its own, or move app/libs/libcore.aar and libcore/libcore.aar aside yourself."
+    )
+}
+
 dependencies {
 
-    implementation(fileTree("libs"))
+    implementation(fileTree("libs") { exclude("*$libcoreCoverageAsideSuffix") })
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
     implementation("androidx.core:core-ktx:1.9.0")
@@ -114,9 +202,10 @@ dependencies {
     testImplementation("org.robolectric:robolectric:4.14.1")
 }
 
-// gomobile output (app/libs/libcore.aar) is gitignored. When it is missing, compile
-// against a no-op stub so JVM unit tests can type-check. The stub is compileOnly /
-// testImplementation, so it is not packaged into the APK, and JaCoCo ignores it.
+// gomobile output (app/libs/libcore.aar) is gitignored. When it is missing — including
+// when a JVM unit-test invocation has set it aside — compile against a no-op stub.
+// The stub is compileOnly / testImplementation, so it is not packaged into the APK,
+// and JaCoCo ignores it. assemble/bundle still see the real AAR when it is present.
 val libcoreAar = file("libs/libcore.aar")
 val libcoreStubClasses = layout.buildDirectory.dir("libcore-stub/classes")
 val compileLibcoreStub = tasks.register<JavaCompile>("compileLibcoreStub") {
