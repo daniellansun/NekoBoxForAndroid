@@ -1,5 +1,6 @@
 package io.nekohasekai.sagernet.bg;
 
+import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
 
@@ -16,9 +17,21 @@ import java.net.InetAddress;
  */
 @Implements(Os.class)
 public class ShadowOsAddress {
+    /** Non-zero values make [kill] throw instead of signaling a real pid. */
+    public static volatile int killErrno = 0;
+    public static volatile int killCalls = 0;
+
     @Implementation
     protected static long sysconf(int name) {
         return 4096L;
+    }
+
+    @Implementation
+    protected static void kill(int pid, int signal) throws ErrnoException {
+        killCalls++;
+        if (killErrno != 0) {
+            throw new ErrnoException("kill", killErrno);
+        }
     }
 
     @Implementation

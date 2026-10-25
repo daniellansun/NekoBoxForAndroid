@@ -19,6 +19,14 @@ import kotlin.concurrent.thread
 
 class GuardedProcessPool(private val onFatal: suspend (IOException) -> Unit) : CoroutineScope {
     companion object {
+        /**
+         * When null, [Guard] reads the process pid by reflection, which is how
+         * API 23 and older devices signal a running child. Tests set this so the
+         * desktop JVM never touches `java.lang.ProcessManager`.
+         */
+        @Volatile
+        internal var pidReader: ((Process) -> Int)? = null
+
         private val pid by lazy {
             Class.forName("java.lang.ProcessManager\$ProcessImpl").getDeclaredField("pid")
                 .apply { isAccessible = true }
@@ -80,7 +88,8 @@ class GuardedProcessPool(private val onFatal: suspend (IOException) -> Unit) : C
                 if (running) withContext(NonCancellable) {  // clean-up cannot be cancelled
                     if (Build.VERSION.SDK_INT < 24) {
                         try {
-                            Os.kill(pid.get(process) as Int, OsConstants.SIGTERM)
+                            val signalPid = pidReader?.invoke(process) ?: (pid.get(process) as Int)
+                            Os.kill(signalPid, OsConstants.SIGTERM)
                         } catch (e: ErrnoException) {
                             if (e.errno != OsConstants.ESRCH) Logs.w(e)
                         } catch (e: ReflectiveOperationException) {
