@@ -299,7 +299,7 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 
 行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。下表来自第十五批行数较低的那次本仓库 XML，页脚是行 **15152/16338**、指令 **102285/113365**、分支 **6915/9564**。另一次是行 **15154**、指令 **102271**、分支 **6915**。两次差 2 行。指令方向相反：行数较低的一次指令多 14。分支两次相同。只动 `ConfigurationFragment`、`GuardedProcessPool` 和 `ProfileSettingsActivity`。这张表用较低的行页脚。它相对第十四批行数较低的本仓库 XML（行 14819）合计多 333 行。相对 Test 验收的第十四批 14820，较低行页脚多 332 行。少掉的 1 行是那份本仓库 XML 比 Test 少出来的，不要把这张表当成 Test 的页脚。
 
-**第十四批验收基线是 Test 在 `26c78d6` 的 14820/16338（90.71%），指令 100473/113365，分支 6775/9564。** 102 个测试，0 失败。不要把第十四批写成 14819 或 14821。这张表不是那份验收页脚，第十五批也还没有 Test 验收。**第十三批验收基线是 Test 在 `5f41659` 的 14537/16338（88.98%），指令 98732/113365，分支 6622/9564。** 97 个测试，0 失败。不要把第十三批写成 14539 或 14540。第十二批验收基线是 Test 在 `c6ad074` 的 **14224/16338（87.06%）**，指令 **96486/113365**，分支 **6454/9564**。93 个测试，0 失败。不要把第十二批写成 14227。第十一批验收基线是 Test 在 `b61ad54` 的 **13841/16338（84.72%）**，指令 **94165/113365**，分支 **6288/9564**。第十批验收基线是 Test 的 **13512/16338**。第九批验收基线是 Test 的 **12965/16333**。分母没有变。这次翻掉的是 `ConfigurationFragment` 全局模式重载的第 875–876、878–879、886 行，`GuardedProcessPool` 第 106 行，以及 `ProfileSettingsActivity` 未保存对话框确定按钮的第 56–57 行。
+**第十五批验收基线是 Test 在 `c072a61` 的 15158/16338（92.78%），指令 102300/113365（90.24%），分支 6917/9564（72.32%）。** 108 个测试，0 失败。相对 Test 的 14820，行 **+338**，指令 **+1827**，分支 **+142**。不要把第十五批写成 15152 或 15154。本仓库两次是 15152 和 15154。Test 比 15152 高 6 行，比 15154 高 4 行，落在这个 2 行跨度外面。方向和先前几批相反：先前 Test 落在两次之间，或比较低的一次再少 2 到 3 行。能对上的文件仍是 `ConfigurationFragment` 全局模式重载、`GuardedProcessPool` 和 `ProfileSettingsActivity` 未保存对话框。这三份的并集是 15157 行，Test 的 15158 还多 1 行，多出来的那一行不在本仓库两次的文件差里。**第十四批验收基线是 Test 在 `26c78d6` 的 14820/16338（90.71%），指令 100473/113365，分支 6775/9564。** 102 个测试，0 失败。不要把第十四批写成 14819 或 14821。**第十三批验收基线是 Test 在 `5f41659` 的 14537/16338（88.98%），指令 98732/113365，分支 6622/9564。** 97 个测试，0 失败。不要把第十三批写成 14539 或 14540。第十二批验收基线是 Test 在 `c6ad074` 的 **14224/16338（87.06%）**，指令 **96486/113365**，分支 **6454/9564**。93 个测试，0 失败。不要把第十二批写成 14227。第十一批验收基线是 Test 在 `b61ad54` 的 **13841/16338（84.72%）**，指令 **94165/113365**，分支 **6288/9564**。第十批验收基线是 Test 的 **13512/16338**。第九批验收基线是 Test 的 **12965/16333**。分母没有变。这次翻掉的是 `ConfigurationFragment` 全局模式重载的第 875–876、878–879、886 行，`GuardedProcessPool` 第 106 行，以及 `ProfileSettingsActivity` 未保存对话框确定按钮的第 56–57 行。
 
 | 包 | 行 | 指令 | 分支 | 方法 | 类 |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -940,7 +940,11 @@ Test 的 14820 在两次本仓库行数之间：比 14819 多 1，比 14821 少 
 
 108 个 JVM 测试，0 失败，0 跳过（本批新增 6 个 Robolectric 测试）。两次 `SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport :app:compileOssReleaseKotlin --offline` 都通过。`syncFirstPartyClasses` 复制 1031 个 class 文件。分母没有变：行 16338，指令 113365，分支 9564，方法 3919，类 780。生产代码没有改。`libcore` 测试桩多了 `stunResult`，不进 APK。`compileOssReleaseKotlin --offline` 通过。
 
-上一批验收基线是 Test 在 `26c78d6` 的 **14820/16338（90.71%）**，指令 **100473/113365**，分支 **6775/9564**。102 个测试，0 失败。不要把第十四批写成 14819 或 14821。本批还没有 Test 验收。不按 ±2 收。下表较低的行页脚是本仓库暂记。
+上一批验收基线是 Test 在 `26c78d6` 的 **14820/16338（90.71%）**，指令 **100473/113365**，分支 **6775/9564**。102 个测试，0 失败。不要把第十四批写成 14819 或 14821。
+
+**本批验收基线是 Test 在 `c072a61` 的 15158/16338（92.78%），指令 102300/113365（90.24%），分支 6917/9564（72.32%）。** 108 个测试，0 失败。相对 Test 的 14820，行 **+338**，指令 **+1827**，分支 **+142**。未覆盖按这个页脚算是行 1180、指令 11065、分支 2647。方法 3401/3919、类 747/780 仍是本仓库 XML，Test 没有另报。不要把第十五批写成 15152 或 15154。
+
+本仓库两次干净跑是行 **15152** 和 **15154**。Test 比 15152 高 6 行，比 15154 高 4 行，落在这两次的外面。这和先前 ±2 / ±3 的方向相反：先前 Test 落在两次之间，或比较低的一次再少几行。两次只动了下面三个文件，并集是 15157 行。Test 的 15158 比并集多 1 行，这一行不在本仓库的文件差里。指令 Test 比 15152 多 15（102300 − 102285），比 15154 多 29（102300 − 102271）。分支两次本仓库都是 6915，Test 是 6917。下表较低的行页脚仍是本仓库记录，不是 Test 的页脚。
 
 | 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第十四批验收 |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -1012,7 +1016,7 @@ Test 的 14820 在两次本仓库行数之间：比 14819 多 1，比 14821 少 
 
 ## 第十六批
 
-上一批还没有 Test 验收。本仓库暂记的较低行页脚是 **15152/16338（92.74%）**，指令 **102285/113365**，分支 **6915/9564**。108 个测试，0 失败。上一批已经验收的基线是 Test 在 `26c78d6` 的 **14820/16338（90.71%）**，指令 **100473/113365**，分支 **6775/9564**。不要把第十四批写成 14819 或 14821，也不要把第十五批写成 15154。下面是第十五批行数较低的那次本仓库 XML，未覆盖行按源文件合计。`ConfigurationFragment` 第 875–876、878–879、886 行，`GuardedProcessPool` 第 106 行，`ProfileSettingsActivity` 第 56–57 行会单独翻。
+上一批验收基线是 Test 在 `c072a61` 的 **15158/16338（92.78%）**，指令 **102300/113365（90.24%）**，分支 **6917/9564（72.32%）**。108 个测试，0 失败。不要把第十五批写成 15152 或 15154。本仓库那次的跨度是 15152–15154，Test 比 15152 高 6 行。本批的页脚还没有干净跑，下面的热点仍是第十五批行数较低的那次本仓库 XML。`ConfigurationFragment` 全局模式重载、`GuardedProcessPool` 第 106 与第 107 行、`ProfileSettingsActivity` 未保存对话框的确定按钮，本批改成每次都会走到，避免再单独翻。
 
 1. **`ConfigurationFragment` 仍缺 190 行**（1397/1587；另一次 1402/1587）。
 2. **`StandardV2RayBean` 132/186**，`V2RayFmt` 529/569，`NGUtil` 61/95。`AboutFragment` 仍是 154/190。
@@ -1058,8 +1062,8 @@ Test 的 14820 在两次本仓库行数之间：比 14819 多 1，比 14821 少 
 - 没有把 Room 数据库放进单元测试。DAO 覆盖口为 null 时仍打开 Room。Robolectric 测试在 `super.onCreate()` 之前放上内存 DAO。
 - 没有改 WireGuard `mtu` 为空时 `clone()` 会 NPE 的现有行为。
 - 没有改 `handleWebviewDir` 在 API 28 以下直接返回的行为，也没有改锁文件路径的拼接。API 29 的沙箱跑过函数本体。
-- 没有改 `VpnService.establishTun` 的组网逻辑。地址、路由、DNS 和 `establish` 能跑完，是因为测试影子替换了 `VpnService.Builder` 和 `Os.inet_pton`。这两个影子加上 `ShadowResolvingNetwork` 挂在第七到第十五批的 Robolectric 测试上。空白域名会让这个影子抛 `UnknownHostException`，其它域名仍返回 `127.0.0.1`。`ShadowOsAddress.kill` 在第九到第十五批替换 `Os.kill`，避免桌面 JVM 向真实 pid 发信号。`ShadowProcessPhoenix` 在第十到第十五批，并且要 `instrumentedPackages` 含 `com.jakewharton.processphoenix`。`ShadowDnsResolver` 在第十二到第十五批，把 `DnsResolver` 的回调拉回调用线程。
+- 没有改 `VpnService.establishTun` 的组网逻辑。地址、路由、DNS 和 `establish` 能跑完，是因为测试影子替换了 `VpnService.Builder` 和 `Os.inet_pton`。这两个影子加上 `ShadowResolvingNetwork` 挂在第七到第十六批的 Robolectric 测试上。空白域名会让这个影子抛 `UnknownHostException`，其它域名仍返回 `127.0.0.1`。`ShadowOsAddress.kill` 在第九到第十六批替换 `Os.kill`，避免桌面 JVM 向真实 pid 发信号。`ShadowProcessPhoenix` 在第十到第十六批，并且要 `instrumentedPackages` 含 `com.jakewharton.processphoenix`。`ShadowDnsResolver` 在第十二到第十六批，把 `DnsResolver` 的回调拉回调用线程。
 - 没有把 `TrojanBean` 的 `sni` 分支调到 `StandardV2RayBean` 前面。那一行在现有类型层次上到不了，调换会改变 `security != "tls"` 时的赋值。
 - 没有克隆 `../../sing-box` 和 `../../libneko`，没有把 Go 覆盖率并进 JaCoCo。
 - 没有把 `PluginManager.initOverride`、`JavaUtil.lockProbe`、`PublicDatabase.kvPairDaoOverride`、`GuardedProcessPool.pidReader`、`BaseService.Binder.restartProcessOverride` 的生产默认值改掉，也没有把 `HevTunRuntime` 的 native hook 默认成空实现。这些口子为 null，或仍指向 `HevTunNative` 时，设备和以前一样。`Libcore.httpBody` / `httpHeader` 为空时，桩仍返回空正文且不写文件。`ExchangeContext.successFailure` / `errnoFailure` 为 null 时，桩上的 `success` 和 `errnoCode` 仍是空操作。`Libcore.urlTestFailure` 为 null 时，桩上的 `urlTest` 仍返回 0。`Libcore.stunResult` 为 null 时，桩上的 `stunTest` 仍返回空的失败结果。这些字段只在测试桩上。
-- 本地导入的确定按钮会走到 `triggerFullRestart`。`restartProcessOverride` 为 null 时，那条仍 `Runtime.exit(0)`。测试里换成计数，所以第十到第十五批没有杀掉测试进程。WebDAV 恢复的确定按钮直接调用 `ProcessPhoenix.triggerRebirth`。
+- 本地导入的确定按钮会走到 `triggerFullRestart`。`restartProcessOverride` 为 null 时，那条仍 `Runtime.exit(0)`。测试里换成计数，所以第十到第十六批没有杀掉测试进程。WebDAV 恢复的确定按钮直接调用 `ProcessPhoenix.triggerRebirth`。

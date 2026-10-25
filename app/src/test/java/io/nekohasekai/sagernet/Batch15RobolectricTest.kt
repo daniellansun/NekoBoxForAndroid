@@ -28,7 +28,6 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.danielstone.materialaboutlibrary.items.MaterialAboutActionItem
 import io.nekohasekai.sagernet.bg.BaseService
-import io.nekohasekai.sagernet.bg.GuardedProcessPool
 import io.nekohasekai.sagernet.bg.ShadowDnsResolver
 import io.nekohasekai.sagernet.bg.ShadowOsAddress
 import io.nekohasekai.sagernet.bg.ShadowProcessPhoenix
@@ -136,11 +135,6 @@ class Batch15RobolectricTest {
         collapseAndPreferences(activity)
         shortcuts()
         stun()
-        runCatching {
-            val pool = GuardedProcessPool { }
-            pool.start(listOf("/bin/true"))
-            idleFor(1_200)
-        }
         activity.finish()
     }
 
@@ -396,6 +390,8 @@ class Batch15RobolectricTest {
         unsaved.onBackPressed()
         idleMain()
         clickDialog(AlertDialog.BUTTON_NEGATIVE)
+        runCatching { ShadowDialog.getLatestDialog()?.dismiss() }
+        idleMain()
         unsaved.finish()
 
         val editor = Robolectric.buildActivity(
