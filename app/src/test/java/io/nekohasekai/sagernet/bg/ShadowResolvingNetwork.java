@@ -25,6 +25,9 @@ public class ShadowResolvingNetwork {
 
     @Implementation
     protected InetAddress[] getAllByName(String host) throws UnknownHostException {
+        if (host == null || host.trim().isEmpty()) {
+            throw new UnknownHostException(String.valueOf(host));
+        }
         return new InetAddress[]{InetAddress.getByName("127.0.0.1")};
     }
 }
