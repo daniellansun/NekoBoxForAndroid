@@ -15,6 +15,7 @@ import com.google.gson.ToNumberPolicy;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Method;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -123,10 +124,26 @@ public class JavaUtil {
         return pathSet;
     }
 
+    /**
+     * Unit tests return null to exercise the "lock held by another process" branch.
+     * Production leaves this null, which calls {@link FileChannel#tryLock()}.
+     */
+    public interface FileLockProbe {
+        FileLock lock(FileChannel channel) throws java.io.IOException;
+    }
+
+    public static volatile FileLockProbe lockProbe;
+
+    static FileLock lockChannel(FileChannel channel) throws java.io.IOException {
+        FileLockProbe probe = lockProbe;
+        if (probe != null) return probe.lock(channel);
+        return channel.tryLock();
+    }
+
     @TargetApi(Build.VERSION_CODES.P)
     static void tryLockOrRecreateFile(File file) {
         try {
-            FileLock tryLock = new RandomAccessFile(file, "rw").getChannel().tryLock();
+            FileLock tryLock = lockChannel(new RandomAccessFile(file, "rw").getChannel());
             if (tryLock != null) {
                 tryLock.close();
             } else {

@@ -23,8 +23,16 @@ object PluginManager {
         val info: ProviderInfo,
     )
 
+    /**
+     * Unit tests supply a plugin path without installing a native plugin.
+     * Production leaves this null and resolves the real executable.
+     */
+    @Volatile
+    internal var initOverride: ((String) -> InitResult?)? = null
+
     @Throws(Throwable::class)
     fun init(pluginId: String): InitResult? {
+        initOverride?.let { return it(pluginId) }
         if (pluginId.isEmpty()) return null
         var throwable: Throwable? = null
 

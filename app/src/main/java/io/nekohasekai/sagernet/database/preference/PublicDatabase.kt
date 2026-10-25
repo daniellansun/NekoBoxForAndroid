@@ -24,7 +24,11 @@ abstract class PublicDatabase : RoomDatabase() {
                 .build()
         }
 
-        val kvPairDao get() = instance.keyValuePairDao()
+        // Unit tests assign this before any read. Production leaves it null and uses Room.
+        @Volatile
+        internal var kvPairDaoOverride: KeyValuePair.Dao? = null
+
+        val kvPairDao get() = kvPairDaoOverride ?: instance.keyValuePairDao()
     }
 
     abstract fun keyValuePairDao(): KeyValuePair.Dao
