@@ -299,7 +299,7 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 
 行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。下表来自第十四批行数较低的那次本仓库 XML，页脚是行 **14819/16338**、指令 **100496/113365**、分支 **6777/9564**。另一次是行 **14821**、指令 **100474**、分支 **6775**。两次差 2 行，只动 `GuardedProcessPool`、`ConfigurationFragment` 和 `MainActivity`。指令和分支的方向相反：行数较低的一次指令多 22、分支多 2。这张表用较低的行页脚。它相对第十三批第一次本仓库 XML（行 14539）合计多 280 行。相对 Test 验收的第十三批 14537，较低行页脚多 282 行。多出来的 2 行是那份本仓库 XML 比 Test 多出来的，不要把这张表当成 Test 的页脚。
 
-**第十三批验收基线是 Test 在 `5f41659` 的 14537/16338（88.98%），指令 98732/113365，分支 6622/9564。** 97 个测试，0 失败。不要把第十三批写成 14539 或 14540。第十四批还没有 Test 验收。较低行页脚 14819 只是本仓库的暂记，不按 ±2 收。第十二批验收基线是 Test 在 `c6ad074` 的 **14224/16338（87.06%）**，指令 **96486/113365**，分支 **6454/9564**。93 个测试，0 失败。不要把第十二批写成 14227。第十一批验收基线是 Test 在 `b61ad54` 的 **13841/16338（84.72%）**，指令 **94165/113365**，分支 **6288/9564**。第十批验收基线是 Test 的 **13512/16338**。第九批验收基线是 Test 的 **12965/16333**。分母没有变。`ConfigurationFragment` 第 209–210 行和 `GuardedProcessPool` 第 44 行仍会单独翻。
+**第十四批验收基线是 Test 在 `26c78d6` 的 14820/16338（90.71%），指令 100473/113365，分支 6775/9564。** 102 个测试，0 失败。不要把第十四批写成 14819 或 14821。这张表不是那份验收页脚。Test 的行数在两次本仓库 XML 之间（14819 与 14821）。**第十三批验收基线是 Test 在 `5f41659` 的 14537/16338（88.98%），指令 98732/113365，分支 6622/9564。** 97 个测试，0 失败。不要把第十三批写成 14539 或 14540。第十二批验收基线是 Test 在 `c6ad074` 的 **14224/16338（87.06%）**，指令 **96486/113365**，分支 **6454/9564**。93 个测试，0 失败。不要把第十二批写成 14227。第十一批验收基线是 Test 在 `b61ad54` 的 **13841/16338（84.72%）**，指令 **94165/113365**，分支 **6288/9564**。第十批验收基线是 Test 的 **13512/16338**。第九批验收基线是 Test 的 **12965/16333**。分母没有变。`ConfigurationFragment` 第 209–210 行和 `GuardedProcessPool` 第 44 行仍会单独翻。
 
 | 包 | 行 | 指令 | 分支 | 方法 | 类 |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -856,19 +856,23 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 
 102 个 JVM 测试，0 失败，0 跳过（本批新增 5 个 Robolectric 测试）。两次 `SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport :app:compileOssReleaseKotlin --offline` 都通过。`syncFirstPartyClasses` 复制 1031 个 class 文件。分母没有变：行 16338，指令 113365，分支 9564，方法 3919，类 780。生产代码没有改。`libcore` 测试桩多了 `urlTestFailure`，不进 APK。`compileOssReleaseKotlin --offline` 通过。
 
-上一批验收基线是 Test 在 `5f41659` 的 **14537/16338（88.98%）**，指令 **98732/113365**，分支 **6622/9564**。97 个测试，0 失败。本批还没有 Test 验收。不按 ±2 收。下表较低的行页脚是本仓库暂记。
+上一批验收基线是 Test 在 `5f41659` 的 **14537/16338（88.98%）**，指令 **98732/113365**，分支 **6622/9564**。97 个测试，0 失败。
+
+**验收基线是 Test 在 `26c78d6` 的干净复跑：行 14820/16338（90.71%），指令 100473/113365，分支 6775/9564。** 102 个测试，0 失败。相对 Test 验收的第十三批 14537/16338，行 **+283**。方法和类 Test 没有另报，下表这两行仍用本仓库 XML。不按 ±2 收。不要把第十四批写成 14819 或 14821。
 
 | 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第十三批验收 |
 | --- | ---: | ---: | ---: | ---: | --- |
-| 行（LINE） | 14819 | 1519 | 16338 | **90.70%** | +282 行；分母不变 |
-| 指令（INSTRUCTION） | 100496 | 12869 | 113365 | **88.65%** | +1764（相对 Test 的 98732） |
-| 分支（BRANCH） | 6777 | 2787 | 9564 | **70.86%** | +155（相对 Test 的 6622） |
-| 方法（METHOD） | 3344 | 575 | 3919 | **85.33%** | 本仓库 XML；Test 未另报第十三批方法 |
-| 类（CLASS） | 736 | 44 | 780 | **94.36%** | 本仓库 XML；Test 未另报第十三批类 |
+| 行（LINE） | 14820 | 1518 | 16338 | **90.71%** | +283 行；分母不变 |
+| 指令（INSTRUCTION） | 100473 | 12892 | 113365 | **88.63%** | +1741（相对 Test 的 98732） |
+| 分支（BRANCH） | 6775 | 2789 | 9564 | **70.84%** | +153（相对 Test 的 6622） |
+| 方法（METHOD） | 3344 | 575 | 3919 | **85.33%** | 本仓库 XML；Test 未另报 |
+| 类（CLASS） | 736 | 44 | 780 | **94.36%** | 本仓库 XML；Test 未另报 |
 
 行数较低的一次 XML：行 **14819/16338（90.70%）**，指令 **100496/113365（88.65%）**，分支 **6777/9564（70.86%）**。HTML 页脚：指令 12,869 of 113,365，分支 2,787 of 9,564，复杂度 3,022 of 8,899，行 1,519 of 16,338（覆盖 = 16338 − 1519 = 14819），方法 575 of 3,919，类 44 of 780。方法 3344/3919，类 736/780。相对 Test 的 14537，行 **+282**，指令 **+1764**，分支 **+155**。
 
 另一次 XML：行 **14821/16338（90.71%）**，指令 **100474/113365（88.63%）**，分支 **6775/9564（70.84%）**。未覆盖行 1517，指令 12891，分支 2789。方法 3344/3919，类 736/780。那次 HTML 被下一次 `:app:clean` 清掉，页脚以 XML 为准。相对 Test 的 14537，行 **+284**，指令 **+1742**（100474 − 98732），分支 **+153**（6775 − 6622）。
+
+Test 的 14820 在两次本仓库行数之间：比 14819 多 1，比 14821 少 1。指令 100473 比行数较高的那次少 1，比行数较低的那次少 23。分支 6775 和行数较高的那次相同，比行数较低的那次少 2。验收用 Test 的 14820/16338。
 
 两次差 2 行。指令和分支方向相反：行数较低的一次指令多 22、分支多 2。只动了三个文件：
 
@@ -934,7 +938,7 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 
 ## 第十五批
 
-上一批还没有 Test 验收。本仓库暂记的较低行页脚是 **14819/16338（90.70%）**，指令 **100496/113365**，分支 **6777/9564**。102 个测试，0 失败。上一批已经验收的基线仍是 Test 在 `5f41659` 的 **14537/16338（88.98%）**。下面是第十四批行数较低的那次 XML，未覆盖行按源文件合计。`ConfigurationFragment` 第 209–210 行、`MainActivity` 第 178–179 行和第 526 行、`GuardedProcessPool` 第 44 行会单独翻。
+上一批验收基线是 Test 在 `26c78d6` 的 **14820/16338（90.71%）**，指令 **100473/113365**，分支 **6775/9564**。102 个测试，0 失败。不要把第十四批写成 14819 或 14821。下面是第十四批行数较低的那次本仓库 XML 的未覆盖排序，不是 Test 的页脚。`ConfigurationFragment` 第 209–210 行、`MainActivity` 第 178–179 行和第 526 行、`GuardedProcessPool` 第 44 行会单独翻。
 
 1. **`ConfigurationFragment` 仍缺 190 行**（1397/1587；另一次 1399/1587）。第 209–210 行会单独翻。
 2. **`RouteSettingsActivity` 181/228**，`StatsBar` 155/197，`AboutFragment` 154/190。关于页这次点过，行数没动。
@@ -983,5 +987,5 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 - 没有改 `VpnService.establishTun` 的组网逻辑。地址、路由、DNS 和 `establish` 能跑完，是因为测试影子替换了 `VpnService.Builder` 和 `Os.inet_pton`。这两个影子加上 `ShadowResolvingNetwork` 挂在第七到第十四批的 Robolectric 测试上。空白域名会让这个影子抛 `UnknownHostException`，其它域名仍返回 `127.0.0.1`。`ShadowOsAddress.kill` 在第九到第十四批替换 `Os.kill`，避免桌面 JVM 向真实 pid 发信号。`ShadowProcessPhoenix` 在第十到第十四批，并且要 `instrumentedPackages` 含 `com.jakewharton.processphoenix`。`ShadowDnsResolver` 在第十二到第十四批，把 `DnsResolver` 的回调拉回调用线程。
 - 没有把 `TrojanBean` 的 `sni` 分支调到 `StandardV2RayBean` 前面。那一行在现有类型层次上到不了，调换会改变 `security != "tls"` 时的赋值。
 - 没有克隆 `../../sing-box` 和 `../../libneko`，没有把 Go 覆盖率并进 JaCoCo。
-- 没有把 `PluginManager.initOverride`、`JavaUtil.lockProbe`、`PublicDatabase.kvPairDaoOverride`、`GuardedProcessPool.pidReader`、`BaseService.Binder.restartProcessOverride` 的生产默认值改掉，也没有把 `HevTunRuntime` 的 native hook 默认成空实现。这些口子为 null，或仍指向 `HevTunNative` 时，设备和以前一样。`Libcore.httpBody` / `httpHeader` 为空时，桩仍返回空正文且不写文件。`ExchangeContext.successFailure` / `errnoFailure` 为 null 时，桩上的 `success` 和 `errnoCode` 仍是空操作。`Libcore.urlTestFailure` 为 null 时，桩上的 `urlTest` 仍返回 0。这些字段只在测试桩上。
+- 没有把 `PluginManager.initOverride`、`JavaUtil.lockProbe`、`PublicDatabase.kvPairDaoOverride`、`GuardedProcessPool.pidReader`、`BaseService.Binder.restartProcessOverride` 的生产默认值改掉，也没有把 `HevTunRuntime` 的 native hook 默认成空实现。这些口子为 null，或仍指向 `HevTunNative` 时，设备和以前一样。`Libcore.httpBody` / `httpHeader` 为空时，桩仍返回空正文且不写文件。`ExchangeContext.successFailure` / `errnoFailure` 为 null 时，桩上的 `success` 和 `errnoCode` 仍是空操作。`Libcore.urlTestFailure` 为 null 时，桩上的 `urlTest` 仍返回 0。`Libcore.stunResult` 为 null 时，桩上的 `stunTest` 仍返回空的失败结果。这些字段只在测试桩上。
 - 本地导入的确定按钮会走到 `triggerFullRestart`。`restartProcessOverride` 为 null 时，那条仍 `Runtime.exit(0)`。测试里换成计数，所以第十到第十四批没有杀掉测试进程。WebDAV 恢复的确定按钮直接调用 `ProcessPhoenix.triggerRebirth`。

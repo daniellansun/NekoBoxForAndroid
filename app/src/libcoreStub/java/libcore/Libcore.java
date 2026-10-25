@@ -70,7 +70,17 @@ public final class Libcore {
         return 0;
     }
 
+    /**
+     * Null keeps the historical stub, which returns an unsuccessful empty result.
+     * Not in the APK.
+     */
+    public static volatile StunResult stunResult;
+
     public static StunResult stunTest(String server) {
+        StunResult override = stunResult;
+        if (override != null) {
+            return override;
+        }
         return new StunResult();
     }
 
