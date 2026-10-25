@@ -55,7 +55,18 @@ public final class Libcore {
         return new BoxInstance();
     }
 
+    /**
+     * Unit tests set this to exercise the service catch around urlTest.
+     * Null keeps the historical stub, which returns 0. Not in the APK.
+     */
+    public static volatile RuntimeException urlTestFailure;
+
     public static int urlTest(BoxInstance instance, String link, int timeout) throws Exception {
+        RuntimeException failure = urlTestFailure;
+        if (failure != null) {
+            urlTestFailure = null;
+            throw failure;
+        }
         return 0;
     }
 
