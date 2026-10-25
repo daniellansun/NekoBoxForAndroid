@@ -20,7 +20,15 @@ object SubscriptionUpdater {
 
     private const val WORK_NAME = "SubscriptionUpdater"
 
+    /** Tests replace scheduling so group edits do not need WorkManager. */
+    @Volatile
+    internal var reconfigureOverride: (suspend () -> Unit)? = null
+
     suspend fun reconfigureUpdater() {
+        reconfigureOverride?.let {
+            it()
+            return
+        }
         RemoteWorkManager.getInstance(app).cancelUniqueWork(WORK_NAME)
 
         val subscriptions = SagerDatabase.groupDao.subscriptions()

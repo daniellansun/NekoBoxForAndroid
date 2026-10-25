@@ -31,6 +31,13 @@ object ProfileManager {
     private val listeners = ArrayList<Listener>()
     private val ruleListeners = ArrayList<RuleListener>()
 
+    /** Default rule names. Production reads string resources; tests supply literals. */
+    internal var ruleTextProvider: (Int, Array<out Any>) -> String = { resId, args ->
+        if (args.isEmpty()) app.getString(resId) else app.getString(resId, *args)
+    }
+
+    private fun text(resId: Int, vararg args: Any) = ruleTextProvider(resId, args)
+
     suspend fun iterator(what: suspend Listener.() -> Unit) {
         synchronized(listeners) {
             listeners.toList()
@@ -198,7 +205,7 @@ object ProfileManager {
             DataStore.rulesFirstCreate = true
             createRule(
                 RuleEntity(
-                    name = app.getString(R.string.route_opt_block_quic),
+                    name = text(R.string.route_opt_block_quic),
                     port = "443",
                     network = "udp",
                     outbound = -2
@@ -206,7 +213,7 @@ object ProfileManager {
             )
             createRule(
                 RuleEntity(
-                    name = app.getString(R.string.route_opt_block_ads),
+                    name = text(R.string.route_opt_block_ads),
                     domains = "geosite:category-ads-all",
                     outbound = -2
                 )
@@ -223,20 +230,20 @@ object ProfileManager {
                 //
                 if (country == "cn") createRule(
                     RuleEntity(
-                        name = app.getString(R.string.route_play_store, displayCountry),
+                        name = text(R.string.route_play_store, displayCountry),
                         domains = "domain:googleapis.cn\ndomain:xn--ngstr-lra8j.com\ndomain:xn--ngstr-cn-8za9o.com",
                     ), false
                 )
                 createRule(
                     RuleEntity(
-                        name = app.getString(R.string.route_bypass_domain, displayCountry),
+                        name = text(R.string.route_bypass_domain, displayCountry),
                         domains = "geosite:$country",
                         outbound = -1
                     ), false
                 )
                 createRule(
                     RuleEntity(
-                        name = app.getString(R.string.route_bypass_ip, displayCountry),
+                        name = text(R.string.route_bypass_ip, displayCountry),
                         ip = "geoip:$country",
                         outbound = -1
                     ), false

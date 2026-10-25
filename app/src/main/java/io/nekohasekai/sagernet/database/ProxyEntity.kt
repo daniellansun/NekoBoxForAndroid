@@ -109,7 +109,8 @@ data class ProxyEntity(
 
         const val TYPE_CHAIN = 8
 
-        val chainName by lazy { app.getString(R.string.proxy_chain) }
+        internal var chainNameOverride: String? = null
+        val chainName by lazy { chainNameOverride ?: app.getString(R.string.proxy_chain) }
 
         @JvmField
         val CREATOR = object : CREATOR<ProxyEntity>() {
@@ -544,31 +545,31 @@ data class ProxyEntity(
         return this
     }
 
+    internal fun settingsActivity(): Class<*> = when (type) {
+        TYPE_SOCKS -> SocksSettingsActivity::class.java
+        TYPE_HTTP -> HttpSettingsActivity::class.java
+        TYPE_SS -> ShadowsocksSettingsActivity::class.java
+        TYPE_SSR -> ShadowsocksRSettingsActivity::class.java
+        TYPE_VMESS -> VMessSettingsActivity::class.java
+        TYPE_TROJAN -> TrojanSettingsActivity::class.java
+        TYPE_TROJAN_GO -> TrojanGoSettingsActivity::class.java
+        TYPE_MIERU -> MieruSettingsActivity::class.java
+        TYPE_NAIVE -> NaiveSettingsActivity::class.java
+        TYPE_HYSTERIA -> HysteriaSettingsActivity::class.java
+        TYPE_SSH -> SSHSettingsActivity::class.java
+        TYPE_WG -> WireGuardSettingsActivity::class.java
+        TYPE_TUIC -> TuicSettingsActivity::class.java
+        TYPE_JUICITY -> JuicitySettingsActivity::class.java
+        TYPE_SHADOWTLS -> ShadowTLSSettingsActivity::class.java
+        TYPE_ANYTLS -> AnyTLSSettingsActivity::class.java
+        TYPE_CHAIN -> ChainSettingsActivity::class.java
+        TYPE_CONFIG -> ConfigSettingActivity::class.java
+        TYPE_SNELL -> SnellSettingsActivity::class.java
+        else -> throw IllegalArgumentException()
+    }
+
     fun settingIntent(ctx: Context, isSubscription: Boolean): Intent {
-        return Intent(
-            ctx, when (type) {
-                TYPE_SOCKS -> SocksSettingsActivity::class.java
-                TYPE_HTTP -> HttpSettingsActivity::class.java
-                TYPE_SS -> ShadowsocksSettingsActivity::class.java
-                TYPE_SSR -> ShadowsocksRSettingsActivity::class.java
-                TYPE_VMESS -> VMessSettingsActivity::class.java
-                TYPE_TROJAN -> TrojanSettingsActivity::class.java
-                TYPE_TROJAN_GO -> TrojanGoSettingsActivity::class.java
-                TYPE_MIERU -> MieruSettingsActivity::class.java
-                TYPE_NAIVE -> NaiveSettingsActivity::class.java
-                TYPE_HYSTERIA -> HysteriaSettingsActivity::class.java
-                TYPE_SSH -> SSHSettingsActivity::class.java
-                TYPE_WG -> WireGuardSettingsActivity::class.java
-                TYPE_TUIC -> TuicSettingsActivity::class.java
-                TYPE_JUICITY -> JuicitySettingsActivity::class.java
-                TYPE_SHADOWTLS -> ShadowTLSSettingsActivity::class.java
-                TYPE_ANYTLS -> AnyTLSSettingsActivity::class.java
-                TYPE_CHAIN -> ChainSettingsActivity::class.java
-                TYPE_CONFIG -> ConfigSettingActivity::class.java
-                TYPE_SNELL -> SnellSettingsActivity::class.java
-                else -> throw IllegalArgumentException()
-            }
-        ).apply {
+        return Intent(ctx, settingsActivity()).apply {
             putExtra(ProfileSettingsActivity.EXTRA_PROFILE_ID, id)
             putExtra(ProfileSettingsActivity.EXTRA_IS_SUBSCRIPTION, isSubscription)
         }

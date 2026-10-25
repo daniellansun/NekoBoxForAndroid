@@ -92,6 +92,14 @@ class BaseService {
 
     class Binder(private var data: Data? = null) : ISagerNetService.Stub(), CoroutineScope,
         AutoCloseable {
+        companion object {
+            // Null on device: a restart connection still exits the process. Tests
+            // replace this so a positive backup import can finish without killing
+            // the unit-test JVM.
+            @Volatile
+            var restartProcessOverride: (() -> Unit)? = null
+        }
+
         private val callbacks = object : RemoteCallbackList<ISagerNetServiceCallback>() {
             override fun onCallbackDied(callback: ISagerNetServiceCallback?, cookie: Any?) {
                 super.onCallbackDied(callback, cookie)
@@ -107,7 +115,12 @@ class BaseService {
 
         override fun registerCallback(cb: ISagerNetServiceCallback, id: Int) {
             if (id == SagerConnection.CONNECTION_ID_RESTART_BG) {
-                Runtime.getRuntime().exit(0)
+                val override = restartProcessOverride
+                if (override != null) {
+                    override()
+                } else {
+                    Runtime.getRuntime().exit(0)
+                }
                 return
             }
             if (!callbackIdMap.contains(cb)) {

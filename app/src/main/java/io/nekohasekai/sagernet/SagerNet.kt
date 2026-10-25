@@ -35,7 +35,7 @@ import moe.matsuri.nb4a.utils.cleanWebview
 import java.io.File
 import androidx.work.Configuration as WorkConfiguration
 
-class SagerNet : Application(),
+open class SagerNet : Application(),
     WorkConfiguration.Provider {
 
     override fun attachBaseContext(base: Context) {
@@ -47,7 +47,9 @@ class SagerNet : Application(),
     private val nativeInterface = NativeInterface()
 
     val externalAssets: File by lazy { getExternalFilesDir(null) ?: filesDir }
-    val process: String = JavaUtil.getProcessName()
+    // API 28+ asks the platform. A null name (seen when the process record is not
+    // ready yet) is the default process, matching the reflection fallback below 28.
+    val process: String = JavaUtil.getProcessName() ?: BuildConfig.APPLICATION_ID
     private val isMainProcess = process == BuildConfig.APPLICATION_ID
     val isBgProcess = process.endsWith(":bg")
 

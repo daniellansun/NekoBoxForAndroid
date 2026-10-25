@@ -476,7 +476,7 @@ class GroupSettingsActivity(
 
 }
 
-private fun isValidServerDns(raw: String): Boolean {
+internal fun isValidServerDns(raw: String): Boolean {
     val value = raw.trim()
     if (value.isEmpty()) return true
     if (value.any { it.isISOControl() || it.isWhitespace() }) return false

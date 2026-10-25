@@ -18,10 +18,28 @@ object HevTunRuntime {
 
     private var running = false
 
+    /**
+     * Native entry points. Production calls [HevTunNative]. Tests replace these
+     * so the start/stop state machine can run without libhev-socks5-tunnel.so.
+     */
+    internal var runningNative: () -> Boolean = { HevTunNative.TProxyIsRunning() }
+    internal var startNative: (String, Int) -> Boolean =
+        { path, fd -> HevTunNative.TProxyStartService(path, fd) }
+    internal var stopNative: () -> Unit = { HevTunNative.TProxyStopService() }
+
+    internal fun resetNativeHooks() {
+        runningNative = { HevTunNative.TProxyIsRunning() }
+        startNative = { path, fd -> HevTunNative.TProxyStartService(path, fd) }
+        stopNative = { HevTunNative.TProxyStopService() }
+    }
+
     fun isRunning(): Boolean {
         return try {
-            HevTunNative.TProxyIsRunning()
+            runningNative()
         } catch (e: UnsatisfiedLinkError) {
+            false
+        } catch (e: ExceptionInInitializerError) {
+            // JVM unit tests (and a missing .so) wrap loadLibrary in this error.
             false
         }
     }
@@ -31,7 +49,7 @@ object HevTunRuntime {
         stop()
         val configFile = File(context.filesDir, CONFIG_FILE)
         configFile.writeText(buildConfig())
-        check(HevTunNative.TProxyStartService(configFile.absolutePath, tunFd)) {
+        check(startNative(configFile.absolutePath, tunFd)) {
             "Failed to start hev-socks5-tunnel"
         }
         running = true
@@ -41,13 +59,13 @@ object HevTunRuntime {
     fun stop() {
         if (!running) return
         try {
-            HevTunNative.TProxyStopService()
+            stopNative()
         } finally {
             running = false
         }
     }
 
-    private fun buildConfig(): String {
+    internal fun buildConfig(): String {
         val useAuth = DataStore.mixedInboundHasAuth
         return buildString {
             appendLine("tunnel:")

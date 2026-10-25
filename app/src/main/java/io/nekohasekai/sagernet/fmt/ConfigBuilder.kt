@@ -1,13 +1,10 @@
 package io.nekohasekai.sagernet.fmt
 
-import android.widget.Toast
 import io.nekohasekai.sagernet.*
 import io.nekohasekai.sagernet.bg.VpnService
-import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_CONFIG
 import io.nekohasekai.sagernet.database.ProxyGroup
-import io.nekohasekai.sagernet.database.SagerDatabase
 import io.nekohasekai.sagernet.fmt.ConfigBuildResult.IndexEntity
 import io.nekohasekai.sagernet.fmt.hysteria.HysteriaBean
 import io.nekohasekai.sagernet.fmt.hysteria.buildSingBoxOutboundHysteriaBean
@@ -32,10 +29,8 @@ import io.nekohasekai.sagernet.fmt.wireguard.WireGuardBean
 import io.nekohasekai.sagernet.fmt.wireguard.buildSingBoxOutboundWireguardBean
 import io.nekohasekai.sagernet.ktx.isIpAddress
 import io.nekohasekai.sagernet.ktx.mkPort
-import io.nekohasekai.sagernet.utils.PackageCache
 import moe.matsuri.nb4a.*
 import moe.matsuri.nb4a.SingBoxOptions.*
-import moe.matsuri.nb4a.plugin.Plugins
 import moe.matsuri.nb4a.proxy.anytls.AnyTLSBean
 import moe.matsuri.nb4a.proxy.anytls.buildSingBoxOutboundAnyTLSBean
 import moe.matsuri.nb4a.proxy.config.ConfigBean
@@ -123,12 +118,12 @@ fun buildConfig(
     val tagMap = HashMap<Long, String>()
     val globalOutbounds = HashMap<Long, String>()
     val readableNames = mutableSetOf(TAG_DIRECT, TAG_BYPASS, TAG_BLOCK, TAG_FRAGMENT, TAG_MIXED, TAG_PROXY)
-    val group = SagerDatabase.groupDao.getById(proxy.groupId)
+    val group = configSource.groupById(proxy.groupId)
 
     fun ProxyEntity.resolveChainInternal(): MutableList<ProxyEntity> {
         val bean = requireBean()
         if (bean is ChainBean) {
-            val beans = SagerDatabase.proxyDao.getEntities(bean.proxies)
+            val beans = configSource.proxiesByIds(bean.proxies)
             val beansMap = beans.associateBy { it.id }
             val beanList = ArrayList<ProxyEntity>()
             for (proxyId in bean.proxies) {
@@ -151,9 +146,9 @@ fun buildConfig(
     }
 
     fun ProxyEntity.resolveChain(): MutableList<ProxyEntity> {
-        val thisGroup = SagerDatabase.groupDao.getById(groupId)
-        val frontProxy = thisGroup?.frontProxy?.let { SagerDatabase.proxyDao.getById(it) }
-        val landingProxy = thisGroup?.landingProxy?.let { SagerDatabase.proxyDao.getById(it) }
+        val thisGroup = configSource.groupById(groupId)
+        val frontProxy = thisGroup?.frontProxy?.let { configSource.proxyById(it) }
+        val landingProxy = thisGroup?.landingProxy?.let { configSource.proxyById(it) }
         val list = resolveChainInternal()
         if (frontProxy != null) {
             list.add(frontProxy)
@@ -164,9 +159,9 @@ fun buildConfig(
         return list
     }
 
-    val extraRules = if (forTest) listOf() else SagerDatabase.rulesDao.enabledRules()
+    val extraRules = if (forTest) listOf() else configSource.enabledRules()
     val extraProxies =
-        if (forTest) mapOf() else SagerDatabase.proxyDao.getEntities(extraRules.mapNotNull { rule ->
+        if (forTest) mapOf() else configSource.proxiesByIds(extraRules.mapNotNull { rule ->
             rule.outbound.takeIf { it > 0 && it != proxy.id }
         }.toHashSet().toList()).associateBy { it.id }
     val buildSelector = !forTest && group?.isSelector == true && !forExport
@@ -178,20 +173,20 @@ fun buildConfig(
     val hostResolvers = HashMap<String, MutableSet<String>>()
     val nonCustomFinalHosts = hashSetOf<String>()
     val groupCache = HashMap<Long, ProxyGroup?>()
-    val isVPN = DataStore.serviceMode == Key.MODE_VPN
-    val deviceInboundTag = if (isVPN && DataStore.enableHevTun) TAG_MIXED else "tun-in"
-    val bind = if (!forTest && DataStore.allowAccess) "0.0.0.0" else LOCALHOST
-    val remoteDns = DataStore.remoteDns.split("\n")
+    val isVPN = configSource.serviceMode == Key.MODE_VPN
+    val deviceInboundTag = if (isVPN && configSource.enableHevTun) TAG_MIXED else "tun-in"
+    val bind = if (!forTest && configSource.allowAccess) "0.0.0.0" else LOCALHOST
+    val remoteDns = configSource.remoteDns.split("\n")
         .mapNotNull { dns -> dns.trim().takeIf { it.isNotBlank() && !it.startsWith("#") } }
-    val directDNS = DataStore.directDns.split("\n")
+    val directDNS = configSource.directDns.split("\n")
         .mapNotNull { dns -> dns.trim().takeIf { it.isNotBlank() && !it.startsWith("#") } }
-    val dnsHosts by lazy { parseDnsHosts(DataStore.dnsHosts) }
-    val enableDnsRouting = DataStore.enableDnsRouting
-    val useFakeDns = DataStore.enableFakeDns && !forTest
-    val needSniff = DataStore.trafficSniffing > 0
-    val needSniffOverride = DataStore.trafficSniffing == 2
+    val dnsHosts by lazy { parseDnsHosts(configSource.dnsHosts) }
+    val enableDnsRouting = configSource.enableDnsRouting
+    val useFakeDns = configSource.enableFakeDns && !forTest
+    val needSniff = configSource.trafficSniffing > 0
+    val needSniffOverride = configSource.trafficSniffing == 2
     val externalIndexMap = ArrayList<IndexEntity>()
-    val ipv6Mode = if (forTest) IPv6Mode.ENABLE else DataStore.ipv6Mode
+    val ipv6Mode = if (forTest) IPv6Mode.ENABLE else configSource.ipv6Mode
 
     fun genDomainStrategy(noAsIs: Boolean): String {
         return when {
@@ -209,12 +204,12 @@ fun buildConfig(
                 cache_file = CacheFile().apply {
                     enabled = true
                     path = "../cache/cache.db"
-                    // if (DataStore.enableClashAPI) {
+                    // if (configSource.enableClashAPI) {
                     store_fakeip = true
                     // }
                 }
                 
-                if (DataStore.enableClashAPI) {
+                if (configSource.enableClashAPI) {
                     clash_api = ClashAPIOptions().apply {
                         external_controller = "127.0.0.1:9090"
                         external_ui = "../files/yacd"
@@ -224,7 +219,7 @@ fun buildConfig(
         }
 
         log = LogOptions().apply {
-            level = when (DataStore.logLevel) {
+            level = when (configSource.logLevel) {
                 0 -> "panic"
                 1 -> "warn"
                 2 -> "info"
@@ -256,20 +251,20 @@ fun buildConfig(
         inbounds = mutableListOf()
 
         if (!forTest) {
-            if (isVPN && !DataStore.enableHevTun) inbounds.add(Inbound_TunOptions().apply {
+            if (isVPN && !configSource.enableHevTun) inbounds.add(Inbound_TunOptions().apply {
                 type = "tun"
                 tag = "tun-in"
                 interface_name = "tun0"
-                stack = when (DataStore.tunImplementation) {
+                stack = when (configSource.tunImplementation) {
                     TunImplementation.GVISOR -> "gvisor"
                     TunImplementation.SYSTEM -> "system"
                     else -> "mixed"
                 }
                 endpoint_independent_nat = true
-                mtu = DataStore.mtu
-                domain_strategy = genDomainStrategy(DataStore.resolveDestination)
+                mtu = configSource.mtu
+                domain_strategy = genDomainStrategy(configSource.resolveDestination)
                 auto_route = true
-                strict_route = DataStore.strictRoute
+                strict_route = configSource.strictRoute
                 sniff = needSniff
                 sniff_override_destination = needSniffOverride
                 when (ipv6Mode) {
@@ -291,14 +286,14 @@ fun buildConfig(
                 type = "mixed"
                 tag = TAG_MIXED
                 listen = bind
-                listen_port = DataStore.mixedPort
-                domain_strategy = genDomainStrategy(DataStore.resolveDestination)
+                listen_port = configSource.mixedPort
+                domain_strategy = genDomainStrategy(configSource.resolveDestination)
                 sniff = needSniff
                 sniff_override_destination = needSniffOverride
-                if (DataStore.mixedInboundHasAuth) {
+                if (configSource.mixedInboundHasAuth) {
                     users = listOf(User().also { u ->
-                        u.username = DataStore.mixedUsername
-                        u.password = DataStore.mixedSecret
+                        u.username = configSource.mixedUsername
+                        u.password = configSource.mixedSecret
                     })
                 }
             })
@@ -314,7 +309,7 @@ fun buildConfig(
             rule_set = mutableListOf()
 
             // 添加并发拨号设置
-             concurrent_dial = DataStore.concurrentDial
+             concurrent_dial = configSource.concurrentDial
         }
 
         // returns outbound tag
@@ -341,7 +336,7 @@ fun buildConfig(
             val chainTag = "c-$chainId"
             var muxApplied = false
 
-            val defaultServerDomainStrategy = SingBoxOptionsUtil.domainStrategy("server")
+            val defaultServerDomainStrategy = configSource.domainStrategy("server")
 
             profileList.forEachIndexed { index, proxyEntity ->
                 val bean = proxyEntity.requireBean()
@@ -364,7 +359,7 @@ fun buildConfig(
                     if (!forTest) {
                         val ownerGid = entity.groupId
                         val ownerGroup = groupCache.getOrPut(ownerGid) {
-                            SagerDatabase.groupDao.getById(ownerGid)
+                            configSource.groupById(ownerGid)
                         }
                         val resolver = ownerGroup
                             ?.takeIf { it.type == GroupType.SUBSCRIPTION }
@@ -489,7 +484,7 @@ fun buildConfig(
                         }
                     }
 
-                    if (needGlobal && DataStore.enableTLSFragment) {
+                    if (needGlobal && configSource.enableTLSFragment) {
                         val outboundMap = currentOutbound.asMap()
                         val tlsOptions = outboundMap["tls"] as? Map<*, *>
                         if (tlsOptions?.get("enabled") == true) {
@@ -536,9 +531,9 @@ fun buildConfig(
                             is HysteriaBean -> if (bean.protocolVersion == 1) "hysteria-plugin" else "hysteria2-plugin"
                             else -> ""
                         }
-                        if (Plugins.isUsingMatsuriExe(pluginId)) {
+                        if (configSource.usesMatsuriExe(pluginId)) {
                             needExternal = false
-                        } else if (Plugins.getPluginExternal(pluginId) != null) {
+                        } else if (configSource.hasExternalPlugin(pluginId)) {
                             throw Exception("You are using an unsupported $pluginId, please download the correct plugin.")
                         }
                     }
@@ -560,7 +555,7 @@ fun buildConfig(
 
                             // no chain rule and not outbound, so need to set to direct
                             if (index == profileList.lastIndex) {
-                                if (DataStore.enableTLSFragment) {
+                                if (configSource.enableTLSFragment) {
                                     route.rules.add(Rule_DefaultOptions().apply {
                                         network = listOf("tcp")
                                         inbound = listOf(tag)
@@ -589,7 +584,7 @@ fun buildConfig(
 
         // build outbounds
         if (buildSelector) {
-            val list = group.id.let { SagerDatabase.proxyDao.getByGroup(it) }
+            val list = group.id.let { configSource.proxiesByGroup(it) }
             list.forEach {
                 tagMap[it.id] = buildChain(it.id, it)
             }
@@ -611,11 +606,11 @@ fun buildConfig(
         val mainProxyTag = (if (buildSelector) TAG_PROXY else tagMap[proxy.id]) ?: TAG_PROXY
 
         // 在应用用户规则之前检查全局模式
-        if (!forTest && DataStore.globalMode) {
+        if (!forTest && configSource.globalMode) {
             // 全局模式下的规则处理
             
             // 绕过内部网络（如果启用）
-            if (DataStore.bypassLan) {
+            if (configSource.bypassLan) {
                 route.rules.add(Rule_DefaultOptions().apply {
                     ip_cidr = listOf(
                         "224.0.0.0/3",
@@ -647,23 +642,19 @@ fun buildConfig(
             // 应用用户规则
             for (rule in extraRules) {
                 if (rule.packages.isNotEmpty()) {
-                    PackageCache.awaitLoadSync()
+                    configSource.ensurePackagesLoaded()
                 }
                 val uidList = rule.packages.map {
                     if (!isVPN) {
-                        Toast.makeText(
-                            SagerNet.application,
-                            SagerNet.application.getString(R.string.route_need_vpn, rule.displayName()),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        configSource.warnPackageRuleNeedsVpn(rule.displayName())
                     }
-                    PackageCache[it]?.takeIf { uid -> uid >= 1000 }
+                    configSource.packageUid(it)?.takeIf { uid -> uid >= 1000 }
                 }.toHashSet().filterNotNull()
                 val ruleSets = mutableListOf<RuleSet>()
 
                 val ruleObj = Rule_DefaultOptions().apply {
                     if (uidList.isNotEmpty()) {
-                        PackageCache.awaitLoadSync()
+                        configSource.ensurePackagesLoaded()
                         user_id = uidList
                     }
                     var domainList: List<String>? = null
@@ -686,7 +677,7 @@ fun buildConfig(
                         rulesetUrls.forEach { origUrl ->
                             val (url, isIPRuleset) = processRulesetUrl(origUrl)
                             
-                            val tag = generateRemoteRuleSet(url, ruleSets, DataStore.rulesUpdateInterval)
+                            val tag = generateRemoteRuleSet(url, ruleSets, configSource.rulesUpdateInterval)
                             
                             rulesetTags.add(Pair(tag, isIPRuleset))
                             
@@ -841,11 +832,7 @@ fun buildConfig(
 
                 if (!ruleObj.checkEmpty()) {
                     if (ruleObj.outbound.isNullOrBlank()) {
-                        Toast.makeText(
-                            SagerNet.application,
-                            "Warning: " + rule.displayName() + ": A non-existent outbound was specified.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        configSource.warnMissingOutbound(rule.displayName())
                     } else {
                         // block 改用新的写法
                         if (ruleObj.outbound == TAG_BLOCK) {
@@ -869,13 +856,13 @@ fun buildConfig(
             type = "direct"
         })
 
-        if (DataStore.enableTLSFragment) {
+        if (configSource.enableTLSFragment) {
             val fragmentOutbound = Outbound().apply {
                 tag = TAG_FRAGMENT
                 type = "direct"
                 _hack_config_map["fragment"] = Fragment().apply {
-                    length = DataStore.fragmentLength
-                    interval = DataStore.fragmentInterval
+                    length = configSource.fragmentLength
+                    interval = configSource.fragmentInterval
                 }.asMap()
             }
             outbounds.add(fragmentOutbound)
@@ -933,7 +920,7 @@ fun buildConfig(
                 tag = "dns-direct"
                 detour = TAG_DIRECT
                 address_resolver = "dns-local"
-                strategy = autoDnsDomainStrategy(SingBoxOptionsUtil.domainStrategy(tag))
+                strategy = autoDnsDomainStrategy(configSource.domainStrategy(tag))
             })
         }
 
@@ -943,7 +930,7 @@ fun buildConfig(
                 address = it ?: throw Exception("No remote DNS, check your settings!")
                 tag = "dns-remote"
                 address_resolver = "dns-direct"
-                strategy = autoDnsDomainStrategy(SingBoxOptionsUtil.domainStrategy(tag))
+                strategy = autoDnsDomainStrategy(configSource.domainStrategy(tag))
             })
         }
         if (dnsHosts.isNotEmpty()) {
@@ -975,7 +962,7 @@ fun buildConfig(
                 port = listOf(53)
                 action = "hijack-dns"
             })
-            if (DataStore.bypassLanInCore) {
+            if (configSource.bypassLanInCore) {
                 route.rules.add(Rule_DefaultOptions().apply {
                     outbound = TAG_BYPASS
                     ip_is_private = true
@@ -1038,7 +1025,7 @@ fun buildConfig(
                     if (!resolver.isIpAddress()) {
                         address_resolver = "dns-direct"
                     }
-                    strategy = autoDnsDomainStrategy(SingBoxOptionsUtil.domainStrategy("server"))
+                    strategy = autoDnsDomainStrategy(configSource.domainStrategy("server"))
                 })
                 dns.rules.add(0, DNSRule_DefaultOptions().apply {
                     makeSingBoxRule(hosts)
@@ -1047,7 +1034,7 @@ fun buildConfig(
             }
         }
 
-        if (!forTest) _hack_custom_config = DataStore.globalCustomConfig
+        if (!forTest) _hack_custom_config = configSource.globalCustomConfig
     }.let {
         val configMap = it.asMap()
         Util.mergeJSON(configMap, proxy.requireBean().customConfigJson)

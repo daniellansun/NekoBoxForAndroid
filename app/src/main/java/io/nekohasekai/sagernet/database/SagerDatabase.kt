@@ -44,9 +44,19 @@ abstract class SagerDatabase : RoomDatabase() {
                 .build()
         }
 
-        val groupDao get() = instance.groupDao()
-        val proxyDao get() = instance.proxyDao()
-        val rulesDao get() = instance.rulesDao()
+        // Unit tests assign these before any read. Production leaves them null and uses Room.
+        @Volatile
+        internal var groupDaoOverride: ProxyGroup.Dao? = null
+
+        @Volatile
+        internal var proxyDaoOverride: ProxyEntity.Dao? = null
+
+        @Volatile
+        internal var rulesDaoOverride: RuleEntity.Dao? = null
+
+        val groupDao get() = groupDaoOverride ?: instance.groupDao()
+        val proxyDao get() = proxyDaoOverride ?: instance.proxyDao()
+        val rulesDao get() = rulesDaoOverride ?: instance.rulesDao()
 
     }
 

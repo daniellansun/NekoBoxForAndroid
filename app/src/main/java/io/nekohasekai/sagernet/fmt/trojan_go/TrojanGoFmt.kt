@@ -1,7 +1,7 @@
 package io.nekohasekai.sagernet.fmt.trojan_go
 
 import io.nekohasekai.sagernet.IPv6Mode
-import io.nekohasekai.sagernet.database.DataStore
+import io.nekohasekai.sagernet.fmt.configSource
 import io.nekohasekai.sagernet.fmt.LOCALHOST
 import io.nekohasekai.sagernet.ktx.*
 import moe.matsuri.nb4a.Protocols
@@ -91,13 +91,13 @@ fun TrojanGoBean.buildTrojanGoConfig(port: Int): String {
         put("password", JSONArray().apply {
             put(password)
         })
-        put("log_level", if (DataStore.logLevel > 0) 0 else 2)
+        put("log_level", if (configSource.logLevel > 0) 0 else 2)
 //        if (Protocols.shouldEnableMux("trojan-go")) put("mux", JSONObject().apply {
 //            put("enabled", true)
 //            put("concurrency", DataStore.muxConcurrency)
 //        })
         put("tcp", JSONObject().apply {
-            put("prefer_ipv4", DataStore.ipv6Mode <= IPv6Mode.ENABLE)
+            put("prefer_ipv4", configSource.ipv6Mode <= IPv6Mode.ENABLE)
         })
 
         when (type) {
