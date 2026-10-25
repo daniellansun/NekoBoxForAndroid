@@ -15,6 +15,12 @@ import java.net.UnknownHostException;
  */
 @Implements(Network.class)
 public class ShadowResolvingNetwork {
+    /**
+     * When non-null, {@link #getAllByName} throws for this exact host.
+     * Blank hosts still throw. Every other host still resolves to 127.0.0.1.
+     */
+    public static volatile String unknownHost;
+
     @Implementation
     protected static Network newInstance(int netId) {
         return ReflectionHelpers.callConstructor(
@@ -27,6 +33,10 @@ public class ShadowResolvingNetwork {
     protected InetAddress[] getAllByName(String host) throws UnknownHostException {
         if (host == null || host.trim().isEmpty()) {
             throw new UnknownHostException(String.valueOf(host));
+        }
+        String blocked = unknownHost;
+        if (blocked != null && blocked.equals(host)) {
+            throw new UnknownHostException(host);
         }
         return new InetAddress[]{InetAddress.getByName("127.0.0.1")};
     }
