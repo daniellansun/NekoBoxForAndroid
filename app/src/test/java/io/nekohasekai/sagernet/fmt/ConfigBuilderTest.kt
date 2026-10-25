@@ -324,6 +324,31 @@ class ConfigBuilderTest {
         }
     }
 
+    @Test
+    fun fragmentDetourAndExtraProxy() {
+        val source = MemoryConfigSource().apply {
+            enableTLSFragment = true
+            serviceMode = "proxy"
+        }
+        val trojan = profile(60, 1, TYPE_TROJAN, TrojanBean().apply {
+            initializeDefaultValues()
+            name = "tj"
+            serverAddress = "tj.example"
+            serverPort = 443
+            password = "pw"
+            security = "tls"
+            sni = "tj.example"
+        })
+        val extra = socks("extra.example", 61, groupId = 1, name = "extra")
+        source.add(trojan)
+        source.add(extra)
+        source.groups[1L] = ProxyGroup(id = 1L)
+        source.rules += RuleEntity(id = 20, domains = "via-extra.example", outbound = extra.id)
+        val json = withConfig(source) { buildConfig(trojan).config }
+        assertTrue(json.contains("\"detour\": \"fragment\"") || json.contains("\"detour\":\"fragment\""))
+        assertTrue(json.contains("extra"))
+    }
+
     private fun hysteriaExternal(id: Int): ProxyEntity {
         return profile(id, 1, TYPE_HYSTERIA, HysteriaBean().apply {
             initializeDefaultValues()

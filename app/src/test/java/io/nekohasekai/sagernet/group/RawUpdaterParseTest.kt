@@ -216,6 +216,78 @@ class RawUpdaterParseTest {
             ).isNullOrEmpty()
         )
 
+        val leftovers = RawUpdater.parseRaw(
+            """
+            proxies:
+              - name: vless-blank-mode
+                type: vless
+                server: blank.example
+                port: 443
+                uuid: 11111111-1111-1111-1111-111111111111
+                network: xhttp
+                xhttp-opts:
+                  mode: ""
+              - name: vless-odd-mode
+                type: vless
+                server: odd.example
+                port: 443
+                uuid: 11111111-1111-1111-1111-111111111111
+                network: xhttp
+                xhttp-opts:
+                  mode: weird
+              - name: wg-ipv6
+                type: wireguard
+                server: wg.example
+                port: 51820
+                ip: 10.9.0.2
+                ipv6: "fd00::9/128"
+                private-key: priv
+                public-key: pub
+                mtu: 1280
+                reserved: [7]
+              - name: wg-ipv6-only
+                type: wireguard
+                server: wg6.example
+                port: 51820
+                ip: "10.1.0.2/24"
+                ipv6: fd00::8
+                private-key: priv
+                public-key: pub
+                mtu: 1280
+              - name: wg-v6-bare
+                type: wireguard
+                server: wg6bare.example
+                port: 51820
+                ipv6: fd00::7
+                private-key: priv
+                public-key: pub
+                mtu: 1280
+              - name: hy-words
+                type: hysteria
+                server: hy.example
+                port: 443
+                auth-str: secret
+                up: fast
+                down: slow
+            """.trimIndent(),
+        )!!
+        val blankMode = leftovers.filterIsInstance<VMessBean>().single { it.name == "vless-blank-mode" }
+        assertEquals("auto", blankMode.xhttpMode)
+        val oddMode = leftovers.filterIsInstance<VMessBean>().single { it.name == "vless-odd-mode" }
+        assertEquals("auto", oddMode.xhttpMode)
+        val wgSlash = leftovers.filterIsInstance<WireGuardBean>().single { it.serverAddress == "wg.example" }
+        assertEquals("10.9.0.2/32", wgSlash.localAddress.lines().first())
+        assertTrue(wgSlash.localAddress.contains("fd00::9/128"))
+        assertEquals("7", wgSlash.reserved)
+        val wg6 = leftovers.filterIsInstance<WireGuardBean>().single { it.serverAddress == "wg6.example" }
+        assertTrue(wg6.localAddress.startsWith("10.1.0.2/24"))
+        assertTrue(wg6.localAddress.contains("fd00::8/128"))
+        val wgBare = leftovers.filterIsInstance<WireGuardBean>().single { it.serverAddress == "wg6bare.example" }
+        assertEquals("fd00::7/128", wgBare.localAddress)
+        val hyWords = leftovers.filterIsInstance<HysteriaBean>().single { it.serverAddress == "hy.example" }
+        assertEquals(100, hyWords.uploadMbps)
+        assertEquals(100, hyWords.downloadMbps)
+
         assertThrows(SubscriptionFoundException::class.java) {
             runBlocking { RawUpdater.parseRaw("clash://install-config?url=http://example.com") }
         }

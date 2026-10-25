@@ -118,6 +118,48 @@ JaCoCo 扫到 876 个第一方 `.class`（771 个 JaCoCo 类、207 个有可执�
 - `SubscriptionClient` / `ProfileStore` 把 `doUpdate` 的 libcore HTTP、content URI 和 `SagerDatabase` 写入收成调用时委托。`ProductionSubscriptionClient` 仍用原来的 `Libcore.newHttpClient()`、`DataStore` 端口和 `allowInsecure`。`ProductionProfileStore` 仍调用原来的 DAO。测试替换这两个 `@Volatile` 变量。
 - `GroupUpdater.forceResolve` 改读 `configSource` 的 IPv6、fake DNS 和服务状态，不再在这条路径上碰 `DataStore`。假 DNS 走系统网络的分支仍要 `SagerNet.underlyingNetwork` 非空才会进。
 
+## 第四批（DataStore、生产委托、订阅确认）
+
+58 个 JVM 测试，0 失败（本批新增 6 个）。`./gradlew :app:jacocoFirstPartyReport`（`SKIP_HEV=1`）通过。
+
+| 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第三批 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 行（LINE） | 5756 | 10524 | 16280 | **35.36%** | +484 行；分母 +63 |
+| 指令（INSTRUCTION） | 43424 | 69631 | 113055 | **38.41%** | +8370；分母 +630 |
+| 分支（BRANCH） | 3656 | 5880 | 9536 | **38.34%** | +204；分母 +22 |
+| 方法（METHOD） | 1253 | 2614 | 3867 | **32.40%** | +498；分母 +52 |
+| 类（CLASS） | 265 | 514 | 779 | **34.02%** | +12；分母 +2 |
+
+分母增加来自 `GroupDirectory` / `RoomGroupDirectory`、`DataStore` 里延迟打开 Room 的 getter，以及 `Preferences.kt` 里按次取 store 的委托。`syncFirstPartyClasses` 复制 1029 个 class 文件（第三批记录为 885）；多出来的主要是各 preference 默认值 lambda。JaCoCo CLASS 计数 779。有可执行行的源文件 209 个。
+
+| 源文件 | 第三批 | 第四批 |
+| --- | ---: | ---: |
+| `database/DataStore.kt` | 0/206 | **216/219** |
+| `database/preference/RoomPreferenceDataStore.kt` | 0 | **53/53** |
+| `database` 包 | 489/961 | **706/974** |
+| `database.preference` 包 | 54/151 | **109/151** |
+| `fmt/ConfigSource.kt` | 2/56 | **34/56** |
+| `group/SubscriptionAccess.kt` | 8/38 | **26/38** |
+| `group/GroupUpdater.kt` | 57/85 | **79/87** |
+| `group/RawUpdater.kt` | 619/631 | **629/631** |
+| `fmt/ConfigBuilder.kt` | 686/690 | **689/690** |
+| `nb4a/proxy/PreferenceBinding.kt` | 0/62 包内 | **43/44** |
+| `ktx/Preferences.kt` | — | **69/85** |
+| `database/ProxyEntity.kt` | 314/365 | 315/365 |
+| `nb4a/SingBoxOptions.java` | 169/171 | 169/171 |
+| `ktx/Utils.kt` | 36/158 | 36/158 |
+| `nb4a/utils/JavaUtil.java` | 37/91 | 37/91 |
+
+`DataStore` 剩下 3 行是 `RoomGroupDirectory`，里面直接叫 `SagerDatabase.groupDao`。`ConfigBuilder` 剩下的 1 行是协议 `when` 的 `else -> throw IllegalStateException("can't reach")`。`RawUpdater` 剩下 2 行：clash 的 `proxies` 不是列表时 `app.getString`，以及 vmess/vless/trojan 类型分支里到不了的 `else`。`SingBoxOptions` 仍是 2 行（静态 gson 与 serializer 里返回 null 的标记）。
+
+### 本批的缝
+
+- `configurationStore` / `profileCacheStore` 改成 getter。默认仍是 `RoomPreferenceDataStore(PublicDatabase.kvPairDao)` 和 `TempDatabase.profileCacheDao`，但是 `by lazy`，对象加载时不打开 Room。每个 preference 委托在 get/set 时才调用 `configPrefs()` / `cachePrefs()`。单元测试先把 `configurationStoreOverride` 设成内存 `KeyValuePair.Dao` 上的 `RoomPreferenceDataStore`。生产上第一次真正读偏好时才建库；只写 `serviceState` 不再建库。键、默认值和读写的类型没有改。
+- `userIndex` 生产仍是 `Binder.getCallingUserHandle().hashCode()`，懒计算。测试可设 `userIndexOverride`，避免 `mixedPort` 在 JVM 上碰 Binder。
+- `currentGroupId` / `currentGroup` / `selectedGroupForImport` 改走 `groupDirectory`。默认 `RoomGroupDirectory` 仍调用原来的 `SagerDatabase.groupDao`。测试换成内存列表。
+- `GroupUpdater.executeUpdate` 仍读 `DataStore.serviceState.connected`（现在这样读不会打开 Room）。断开时的确认文案收成 `subscriptionUpdateWarning`，默认还是 `app.getString(R.string.update_subscription_warning)`。测试换成固定字符串。
+- `ProductionConfigSource` 里读 `DataStore` 的 getter，以及 `SingBoxOptionsUtil.domainStrategy`，在内存 store 上跑过。`ProductionSubscriptionClient.fetch` 用 libcore 桩的空 HTTP 客户端跑过（含 `restrictedTLS` 和 `allowInsecure`）。DAO、`Plugins`、`PackageCache`、`Toast`、`readContent`、`ProductionProfileStore` 没有调用，它们要 Room 或 `SagerNet.application`。
+
 ## 复现
 
 需要 JDK 17+（本次为 21）、Android SDK `platforms;android-35` 与 `build-tools;35.0.1`。`local.properties` 的 `sdk.dir` 或 `ANDROID_HOME` 指向 SDK。
@@ -174,29 +216,29 @@ export SKIP_HEV=1                         # 单元测试不需要 libhev-socks5-
 
 JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`SingBoxOptions.java` 约 4846 行源码，绝大多数是字段声明，JaCoCo 只记到 171 行。
 
-## 分包表（第三批之后）
+## 分包表（第四批之后）
 
-行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。`fmt` 现为 952 行（`ConfigSource` 及其生产委托）。`group` 现为 806 行（含 `SubscriptionAccess.kt`）。`ktx` 的 513 行来自第一批把反射查找改成 `by lazy`。
+行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。`database` 现为 974 行（含 `GroupDirectory`）。`ktx` 现为 561 行（preference 委托在 get/set 时再取 store）。`group` 现为 808 行。`bg` 的 6 行是读到 `BaseService.State` 枚举，不是服务生命周期。
 
 | 包 | 行 | 指令 | 分支 | 方法 | 类 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `io.nekohasekai.sagernet.ui` | 0/5183 | 0/32782 | 0/2568 | 0/1072 | 0/250 |
+| `io.nekohasekai.sagernet.ui` | 0/5183 | 0/32791 | 0/2568 | 0/1072 | 0/250 |
 | `io.nekohasekai.sagernet.ui.profile` | 0/1272 | 0/7943 | 0/339 | 0/255 | 0/42 |
-| `io.nekohasekai.sagernet.database` | 489/961 | 2822/11447 | 252/467 | 94/601 | 9/35 |
-| `io.nekohasekai.sagernet.fmt` | 829/952 | 5345/6148 | 541/639 | 68/140 | 10/14 |
-| `io.nekohasekai.sagernet.fmt.v2ray` | 837/939 | 5431/6096 | 549/817 | 64/67 | 6/6 |
-| `io.nekohasekai.sagernet.group` | 685/806 | 5463/6960 | 619/1011 | 30/63 | 8/22 |
-| `io.nekohasekai.sagernet.bg` | 0/803 | 0/5516 | 0/392 | 0/216 | 0/46 |
+| `io.nekohasekai.sagernet.database` | 706/974 | 9083/11686 | 294/473 | 460/620 | 11/37 |
+| `io.nekohasekai.sagernet.fmt` | 864/952 | 5512/6148 | 545/639 | 100/140 | 11/14 |
+| `io.nekohasekai.sagernet.fmt.v2ray` | 837/939 | 5432/6096 | 550/817 | 64/67 | 6/6 |
+| `io.nekohasekai.sagernet.group` | 734/808 | 5877/6972 | 685/1011 | 36/66 | 10/22 |
+| `io.nekohasekai.sagernet.bg` | 6/803 | 101/5516 | 0/392 | 5/216 | 1/46 |
+| `io.nekohasekai.sagernet.ktx` | 309/561 | 2594/4403 | 153/230 | 99/220 | 8/25 |
 | `io.nekohasekai.sagernet.widget` | 0/518 | 0/3095 | 0/315 | 0/140 | 0/26 |
-| `io.nekohasekai.sagernet.ktx` | 240/513 | 1884/4033 | 127/214 | 52/190 | 6/25 |
 | `io.nekohasekai.sagernet.bg.proto` | 0/419 | 0/3149 | 0/206 | 0/101 | 0/17 |
 | `io.nekohasekai.sagernet.utils` | 87/407 | 615/2752 | 85/303 | 15/91 | 4/22 |
-| `moe.matsuri.nb4a` | 301/374 | 1915/2703 | 215/384 | 180/206 | 145/152 |
-| `moe.matsuri.nb4a.utils` | 181/356 | 1348/2390 | 100/206 | 35/58 | 4/6 |
+| `moe.matsuri.nb4a` | 308/374 | 1953/2703 | 220/384 | 182/206 | 146/152 |
+| `moe.matsuri.nb4a.utils` | 183/356 | 1359/2390 | 102/206 | 36/58 | 4/6 |
 | `io.nekohasekai.sagernet.fmt.hysteria` | 309/321 | 2094/2202 | 244/300 | 19/22 | 3/3 |
 | `moe.matsuri.nb4a.ui` | 0/307 | 0/2032 | 0/72 | 0/101 | 0/18 |
 | `io.nekohasekai.sagernet` | 17/175 | 52/918 | 1/74 | 2/62 | 2/8 |
-| `io.nekohasekai.sagernet.database.preference` | 54/151 | 283/952 | 24/73 | 18/68 | 2/10 |
+| `io.nekohasekai.sagernet.database.preference` | 109/151 | 704/952 | 58/73 | 48/68 | 4/10 |
 | `moe.matsuri.nb4a.proxy.anytls` | 115/145 | 667/930 | 67/92 | 10/17 | 3/4 |
 | `io.nekohasekai.sagernet.fmt.trojan_go` | 130/144 | 889/1002 | 78/120 | 11/13 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.shadowsocks` | 130/135 | 794/868 | 63/82 | 12/14 | 3/3 |
@@ -207,7 +249,7 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 | `moe.matsuri.nb4a.net` | 0/83 | 0/346 | 0/28 | 0/11 | 0/4 |
 | `io.nekohasekai.sagernet.fmt.juicity` | 78/81 | 524/561 | 46/70 | 11/14 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.socks` | 72/80 | 503/529 | 50/66 | 14/17 | 3/3 |
-| `moe.matsuri.nb4a.proxy` | 0/62 | 0/376 | 0/30 | 0/27 | 0/2 |
+| `moe.matsuri.nb4a.proxy` | 43/62 | 240/376 | 22/30 | 9/27 | 1/2 |
 | `io.nekohasekai.sagernet.fmt.wireguard` | 54/59 | 250/263 | 18/20 | 9/12 | 3/3 |
 | `moe.matsuri.nb4a.proxy.shadowtls` | 26/56 | 108/339 | 4/4 | 8/15 | 3/4 |
 | `io.nekohasekai.sagernet.fmt.mieru` | 50/54 | 292/309 | 10/12 | 8/10 | 3/3 |
@@ -287,27 +329,24 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 | `io.nekohasekai.sagernet.ui.profile.ProfileSettingsActivity.kt` | 233 | 0/233 |
 | `io.nekohasekai.sagernet.ui.RouteSettingsActivity.kt` | 228 | 0/228 |
 | `io.nekohasekai.sagernet.ui.AppManagerActivity.kt` | 228 | 0/228 |
-| `io.nekohasekai.sagernet.database.DataStore.kt` | 206 | 0/206 |
 | `io.nekohasekai.sagernet.widget.StatsBar.kt` | 197 | 0/197 |
 | `io.nekohasekai.sagernet.ktx.Utils.kt` | 122 | 36/158 |
 | `io.nekohasekai.sagernet.database.ProxyEntity.kt` | 51 | 314/365 |
 
-`ConfigBuilder.kt` 剩 4 行。`RawUpdater.kt` 剩 12 行。`SingBoxOptions.java` 剩 2 行。`JavaUtil.java` 剩 54 行，主要是 `SDK_INT >= 28` 才进的 WebView 目录锁。`Formats.kt` 剩 11 行。`KryoConverters.java` 剩 2 行。
+`ConfigBuilder.kt` 剩 1 行（`else -> throw IllegalStateException("can't reach")`）。`RawUpdater.kt` 剩 2 行。`SingBoxOptions.java` 剩 2 行。`JavaUtil.java` 剩 54 行，主要是 `SDK_INT >= 28` 才进的 WebView 目录锁。`Utils.kt` 剩 122 行。`DataStore.kt` 剩 3 行（`RoomGroupDirectory`）。`ConfigSource.kt` 34/56，`SubscriptionAccess.kt` 26/38。
 
-生产委托故意没在 JVM 上执行，否则会开 Room 或要 `SagerNet.application`：`ConfigSource.kt` 2/56，`SubscriptionAccess.kt` 8/38。`GroupUpdater.executeUpdate` 仍读 `DataStore.serviceState`，约 28 行未覆盖。
+## 第五批
 
-## 第四批
-
-1. **`DataStore.kt`（0/206）**。对象初始化就会构造 `RoomPreferenceDataStore`。要覆盖得把 preference 委托改成第一次读取才碰库，或接受在 JVM 上起一个内存 Room。现有 `ProductionConfigSource` / `ProductionSubscriptionClient` / `ProductionProfileStore` 也只有走到这些 getter 才会执行。
-2. **`ProxyEntity.kt` 剩下的 51 行**，以及 `database` 包余下的 472 行（`ProfileManager`、`GroupManager` 里会再进 Room 或 `SubscriptionUpdater` 的路径）。
-3. **`Utils.kt` 122 行**。剩下的大多是 `Context`、`Fragment`、`RecyclerView`。纯委托已经盖过。
-4. **`JavaUtil.handleWebviewDir`**。需要 `SDK_INT >= 28` 和可用的 `Context.getDataDir()`。
-5. **`GroupUpdater.executeUpdate`**。确认弹窗和失败回调读 `DataStore.serviceState.connected`。
-6. **`bg` / `bg.proto`（0/1222）**。没有不碰服务生命周期的便宜缝。
-7. **UI**。`ui` + `ui.profile` 仍是 0/6455。
+1. **UI**。`ui` + `ui.profile` 仍是 0/6455，`widget` 0/518，`nb4a.ui` 0/307。工程里没有 Robolectric，这些类要 `Activity` / `Fragment` / `RecyclerView`。本批没有抽 UI 缝。
+2. **`bg`（6/803）和 `bg.proto`（0/419）**。6 行只是 `BaseService.State` 被读到。服务启动、通知、VPN 接口没有不碰生命周期的便宜缝。
+3. **`ProxyEntity.kt` 剩下约 50 行**，主要是 `settingIntent`（各协议的 Settings Activity）和链式 `displayType`（`app.getString`）。`ProfileManager` 0/142，`GroupManager` 仍会进 `SagerDatabase` 或 `SubscriptionUpdater`。`database` 包现为 706/974。
+4. **`Utils.kt` 122 行**。剩下的是 `Context`、`Fragment`、`RecyclerView`、重启进程。`forEachTry` 和 `parsePort` 已经盖过。
+5. **`JavaUtil.handleWebviewDir`**。`SDK_INT` 桩是 0，函数在 `< 28` 处返回。后面的目录锁要 API 28+ 和 `Context.getDataDir()`。
+6. **`ConfigSource` 剩下 22 行**：`SagerDatabase` DAO、`Plugins`、`PackageCache`、两条 `Toast`。`SubscriptionAccess` 剩下 12 行：`readContent`、两条 `app.getString`、`ProductionProfileStore`。`RoomGroupDirectory` 3 行仍直接打开 Room。
+7. **`GroupUpdater` 剩下 8 行**。假 DNS 要 `SagerNet.underlyingNetwork != null` 才调用 `getAllByName`。`startUpdate` 把 `executeUpdate` 丢进 `runOnDefaultDispatcher`。默认确认文案仍是 `app.getString`。Trojan 在 `sni` 为空时回填的那一行，这套 JVM 桩没有记到。
 8. **`libcore` Go**。见下一节。缺 `../../sing-box` 与 `../../libneko`，第一方 Go 约 1927 行，仍无测试。
 
-仍基本为 0：`fmt.gson`（0/8）、`nb4a.proxy`（0/62）、`nb4a.plugin`（0/53）。`nb4a.proxy.neko` 24/32，`nb4a.proxy.config` 20/51。
+`ConfigBuilder` 剩 1 行，`RawUpdater` 剩 2 行，`SingBoxOptions` 剩 2 行。`fmt.gson` 仍是 0/8。`nb4a.plugin` 0/53。`nb4a.proxy` 现为 43/62（`PreferenceBinding` 的缓存读写；`preference` 惰性查找要 Fragment）。`nb4a.proxy.neko` 24/32，`nb4a.proxy.config` 20/51。
 
 ## `libcore` Go
 
@@ -338,7 +377,7 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 - 没有跑仪器测试或打包 APK。`assemble` 的 release 依赖没有改；`libcore.aar` 存在时仍走原来的 `compileOnly`。
 - 没有把 `libcore.aar` 或 JaCoCo HTML 提交进 git（`build/`、`app/libs/` 仍被忽略）。
 - 没有改 AnyTLS 的 fingerprint 赋值。测试按当前字节码断言 `utls.fingerprint == null`。
-- 没有把 Room 放进单元测试。`ProductionConfigSource` 仍是生产默认值，getter 在调用时才读 `DataStore`。
+- 没有把 Room 数据库放进单元测试。`RoomPreferenceDataStore` 用内存 `KeyValuePair.Dao` 跑过；`RoomGroupDirectory` 和 `ProductionProfileStore` 仍直接调用 `SagerDatabase`，测试没有执行这两处。
 - 没有改 WireGuard `mtu` 为空时 `clone()` 会 NPE 的现有行为。测试夹具写上 `MTU`。
-- 没有在单元测试里执行 `ProductionConfigSource`、`ProductionSubscriptionClient`、`ProductionProfileStore`。它们仍是生产默认值，调用时才读 `DataStore` / Room / `libcore` HTTP。
-- 没有覆盖 UI，也没有跑 `GroupUpdater.executeUpdate`（那条路径读 `DataStore.serviceState`）。
+- 没有在单元测试里执行 `ProductionProfileStore`、`ConfigSource` 的 DAO / Toast / 插件方法，也没有执行 `readContent`。`ProductionConfigSource` 读 `DataStore` 的 getter 和 `ProductionSubscriptionClient.fetch` 用内存 store 与 libcore 空 HTTP 桩跑过。
+- 没有覆盖 UI。`GroupUpdater.executeUpdate` 的确认、失败和成功路径跑过；`startUpdate` 和假 DNS 的 `underlyingNetwork` 分支没有跑。

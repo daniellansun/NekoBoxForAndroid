@@ -3,6 +3,8 @@ package io.nekohasekai.sagernet.group
 import io.nekohasekai.sagernet.IPv6Mode
 import io.nekohasekai.sagernet.Key
 import io.nekohasekai.sagernet.SubscriptionFilterMode
+import io.nekohasekai.sagernet.bg.BaseService
+import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.GroupManager
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.database.ProxyGroup
@@ -17,6 +19,7 @@ import io.nekohasekai.sagernet.fmt.trojan.TrojanBean
 import io.nekohasekai.sagernet.fmt.trojan_go.TrojanGoBean
 import io.nekohasekai.sagernet.fmt.v2ray.VMessBean
 import io.nekohasekai.sagernet.ktx.isIpAddress
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -215,6 +218,98 @@ class RawUpdaterUpdateTest {
         GroupUpdater.progress.remove(4L)
     }
 
+    @Test
+    fun executeUpdateConfirmsFailureAndApplies() {
+        val previousState = DataStore.serviceState
+        val previousWarning = GroupUpdater.subscriptionUpdateWarning
+        val previousUi = GroupManager.userInterface
+        GroupUpdater.subscriptionUpdateWarning = { "warn-text" }
+        try {
+            GroupUpdater.updating.add(3L)
+            val cancelled = runCatching {
+                runBlocking { GroupUpdater.executeUpdate(group("busy"), true) }
+            }
+            assertTrue(cancelled.exceptionOrNull() is CancellationException || cancelled.getOrNull() == true)
+            GroupUpdater.updating.remove(3L)
+
+            DataStore.serviceState = BaseService.State.Idle
+            val declined = ConfirmUi(accept = false)
+            GroupManager.userInterface = declined
+            val httpGroup = group("http")
+            httpGroup.subscription!!.link = "http://example.test/sub"
+            val declinedResult = runCatching {
+                runBlocking { GroupUpdater.executeUpdate(httpGroup, true) }
+            }
+            assertEquals("warn-text", declined.message)
+            assertFalse(GroupUpdater.updating.contains(3L))
+            assertTrue(
+                declinedResult.exceptionOrNull() is CancellationException || declinedResult.getOrNull() == true,
+            )
+
+            GroupManager.userInterface = null
+            val quiet = runCatching {
+                runBlocking { GroupUpdater.executeUpdate(httpGroup, true) }
+            }
+            assertTrue(quiet.exceptionOrNull() is CancellationException || quiet.getOrNull() == true)
+
+            val client = FakeSubscriptionClient("socks5://u:p@1.2.3.4:1080#alpha")
+            val store = MemoryProfileStore()
+            DataStore.serviceState = BaseService.State.Connected
+            val connected = group("kept")
+            connected.subscription!!.apply {
+                link = "https://example.test/sub"
+                filterMode = 9
+                filterRegex = "alpha"
+            }
+            withPorts(client, store) {
+                assertTrue(GroupUpdater.executeUpdate(connected, true))
+            }
+            assertEquals(1, store.rows.size)
+            assertFalse(GroupUpdater.updating.contains(3L))
+
+            client.contentDisposition = "attachment; filename*=UTF-8''Other%20Name"
+            val renamed = group("Subscription #9")
+            renamed.subscription!!.link = "https://example.test/sub"
+            withPorts(client, store) {
+                assertTrue(GroupUpdater.executeUpdate(renamed, false))
+            }
+            assertEquals("Other Name", renamed.name)
+
+            val accepted = ConfirmUi(accept = true)
+            GroupManager.userInterface = accepted
+            DataStore.serviceState = BaseService.State.Idle
+            val onlyWhenUp = group("when-up")
+            onlyWhenUp.subscription!!.apply {
+                link = "https://example.test/sub"
+                updateWhenConnectedOnly = true
+            }
+            store.rows.clear()
+            withPorts(client, store) {
+                assertTrue(GroupUpdater.executeUpdate(onlyWhenUp, true))
+            }
+            assertEquals("warn-text", accepted.message)
+            assertEquals(1, store.rows.size)
+
+            client.body = ""
+            val failed = ConfirmUi(accept = true)
+            GroupManager.userInterface = failed
+            DataStore.serviceState = BaseService.State.Connected
+            val broken = group("broken")
+            broken.subscription!!.link = "https://example.test/empty"
+            var ok = true
+            withPorts(client, store) {
+                ok = GroupUpdater.executeUpdate(broken, true)
+            }
+            assertFalse(ok)
+            assertTrue(failed.failure.isNotEmpty())
+        } finally {
+            DataStore.serviceState = previousState
+            GroupUpdater.subscriptionUpdateWarning = previousWarning
+            GroupManager.userInterface = previousUi
+            GroupUpdater.updating.remove(3L)
+        }
+    }
+
     private fun group(name: String): ProxyGroup {
         return ProxyGroup(id = 3L, name = name, subscription = SubscriptionBean().apply {
             initializeDefaultValues()
@@ -270,6 +365,31 @@ private class MemoryProfileStore : ProfileStore {
     override fun countByGroup(groupId: Long) = reportedCount ?: rows.count { it.groupId == groupId }.toLong()
     override fun updateGroup(group: ProxyGroup) {
         updatedGroups++
+    }
+}
+
+private class ConfirmUi(private val accept: Boolean) : GroupManager.Interface {
+    var message = ""
+    var failure = ""
+    override suspend fun confirm(message: String): Boolean {
+        this.message = message
+        return accept
+    }
+
+    override suspend fun alert(message: String) {}
+    override suspend fun onUpdateSuccess(
+        group: ProxyGroup,
+        changed: Int,
+        added: List<String>,
+        updated: Map<String, String>,
+        deleted: List<String>,
+        duplicate: List<String>,
+        byUser: Boolean,
+    ) {
+    }
+
+    override suspend fun onUpdateFailure(group: ProxyGroup, message: String) {
+        failure = message
     }
 }
 

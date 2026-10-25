@@ -125,6 +125,11 @@ abstract class GroupUpdater {
         val updating = Collections.synchronizedSet<Long>(mutableSetOf())
         val progress = Collections.synchronizedMap<Long, Progress>(mutableMapOf())
 
+        /** Confirm text for an update that would run while disconnected. Tests replace this. */
+        @Volatile
+        internal var subscriptionUpdateWarning: () -> String =
+            { app.getString(R.string.update_subscription_warning) }
+
         fun startUpdate(proxyGroup: ProxyGroup, byUser: Boolean) {
             runOnDefaultDispatcher {
                 executeUpdate(proxyGroup, byUser)
@@ -141,7 +146,7 @@ abstract class GroupUpdater {
                 val userInterface = GroupManager.userInterface
 
                 if (byUser && (subscription.link?.startsWith("http://") == true || subscription.updateWhenConnectedOnly) && !connected) {
-                    if (userInterface == null || !userInterface.confirm(app.getString(R.string.update_subscription_warning))) {
+                    if (userInterface == null || !userInterface.confirm(subscriptionUpdateWarning())) {
                         finishUpdate(proxyGroup)
                         cancel()
                         return@coroutineScope true
