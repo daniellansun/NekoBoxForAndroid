@@ -37,6 +37,15 @@ public final class Libcore {
 
     public static void unxz(String archive, String path) throws Exception {}
 
+    /**
+     * Unit tests put a response body here. Empty keeps the historical stub,
+     * which returns a blank body and writes nothing.
+     */
+    public static volatile String httpBody = "";
+
+    /** Unit tests put a response header value here. Empty matches the old stub. */
+    public static volatile String httpHeader = "";
+
     public static HTTPClient newHttpClient() {
         return new EmptyHttpClient();
     }
@@ -78,9 +87,25 @@ public final class Libcore {
     }
 
     private static final class EmptyHttpResponse implements HTTPResponse {
-        @Override public StringBox getHeader(String key) { return new StringBox(); }
-        @Override public byte[] getContent() { return new byte[0]; }
-        @Override public StringBox getContentString() { return new StringBox(); }
-        @Override public void writeTo(String path) {}
+        @Override public StringBox getHeader(String key) {
+            StringBox box = new StringBox();
+            box.value = httpHeader;
+            return box;
+        }
+        @Override public byte[] getContent() {
+            return httpBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        }
+        @Override public StringBox getContentString() {
+            StringBox box = new StringBox();
+            box.value = httpBody;
+            return box;
+        }
+        @Override public void writeTo(String path) throws Exception {
+            if (httpBody.isEmpty()) return;
+            java.nio.file.Files.write(
+                    java.nio.file.Path.of(path),
+                    httpBody.getBytes(java.nio.charset.StandardCharsets.UTF_8)
+            );
+        }
     }
 }

@@ -141,6 +141,7 @@ class Batch7RobolectricTest {
         DataStore.vpnService = null
         DataStore.mixedInboundAuthed = false
         DataStore.speedInterval = 0
+        DataStore.showDirectSpeed = true
         DataStore.enableHevTun = false
         groupDirectory = RoomGroupDirectory
         SagerDatabase.groupDaoOverride = null
