@@ -346,6 +346,7 @@ class AssetsActivity : ThemedActivity() {
         } else {
             return
         }
+        if (!isHttpOrHttpsUrl(url)) error("Invalid rules URL")
         val client = Libcore.newHttpClient().apply {
             modernTLS()
             keepAlive()

@@ -51,7 +51,8 @@ class TrafficLooper
             val traffic = mutableMapOf<Long, TrafficData>()
             data.proxy?.config?.trafficMap?.forEach { (_, ents) ->
                 for (ent in ents) {
-                    val item = idMap[ent.id] ?: return@forEach
+                    // One unknown id used to abort the rest of the final post.
+                    val item = idMap[ent.id] ?: continue
                     ent.rx = item.rx
                     ent.tx = item.tx
                     ProfileManager.updateTraffic(ent.id, ent.rx, ent.tx)
@@ -171,7 +172,11 @@ class TrafficLooper
                 delay(delayMs)
                 continue
             }
-            if (!proxy.isInitialized()) continue
+            if (!proxy.isInitialized()) {
+                // Spinning here pegs a core until init finishes or the job is cancelled.
+                delay(delayMs)
+                continue
+            }
 
             val snapshot = withStateLock {
                 if (trafficUpdater == null) {

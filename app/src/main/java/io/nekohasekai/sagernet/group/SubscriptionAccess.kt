@@ -9,6 +9,7 @@ import io.nekohasekai.sagernet.database.SagerDatabase
 import io.nekohasekai.sagernet.database.SubscriptionBean
 import io.nekohasekai.sagernet.ktx.USER_AGENT
 import io.nekohasekai.sagernet.ktx.app
+import io.nekohasekai.sagernet.ktx.isHttpOrHttpsUrl
 import libcore.Libcore
 import moe.matsuri.nb4a.utils.Util
 
@@ -48,7 +49,9 @@ internal object ProductionSubscriptionClient : SubscriptionClient {
             if (DataStore.allowInsecureOnRequest) {
                 allowInsecure()
             }
-            setURL(subscription.link)
+            val link = subscription.link?.trim().orEmpty()
+            if (!isHttpOrHttpsUrl(link)) error("Unsupported subscription URL")
+            setURL(link)
             setUserAgent(subscription.customUserAgent.takeIf { it.isNotBlank() } ?: USER_AGENT)
         }.execute()
         return SubscriptionFetch(

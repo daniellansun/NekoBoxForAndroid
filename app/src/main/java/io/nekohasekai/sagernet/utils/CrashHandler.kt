@@ -40,25 +40,7 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         })
     }
 
-    fun formatThrowable(throwable: Throwable): String {
-        var format = throwable.javaClass.name
-        val message = throwable.message
-        if (!message.isNullOrBlank()) {
-            format += ": $message"
-        }
-        format += "\n"
-
-        format += throwable.stackTrace.joinToString("\n") {
-            "    at ${it.className}.${it.methodName}(${it.fileName}:${if (it.isNativeMethod) "native" else it.lineNumber})"
-        }
-
-        val cause = throwable.cause
-        if (cause != null) {
-            format += "\n\nCaused by: " + formatThrowable(cause)
-        }
-
-        return format
-    }
+    fun formatThrowable(throwable: Throwable): String = formatThrowableReport(throwable)
 
     fun buildReportHeader(): String {
         var report = ""
@@ -101,7 +83,7 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
             report += "Settings: \n"
             for (pair in PublicDatabase.kvPairDao.all()) {
                 report += "\n"
-                report += pair.key + ": " + pair.toString()
+                report += settingReportLine(pair.key, pair.toString())
             }
         } catch (e: Exception) {
             report += "Export settings failed: " + formatThrowable(e)
@@ -123,30 +105,34 @@ object CrashHandler : Thread.UncaughtExceptionHandler {
         // followed by string ending with literal `]`
         // multiline values will be ignored
         val propertiesPattern = Pattern.compile("^\\[([^]]+)]: \\[(.+)]$")
+        var process: Process? = null
         try {
-            val process = ProcessBuilder().command("/system/bin/getprop")
+            process = ProcessBuilder().command("/system/bin/getprop")
                 .redirectErrorStream(true)
                 .start()
-            val inputStream = process.inputStream
-            val bufferedReader = BufferedReader(InputStreamReader(inputStream))
-            var line: String?
-            var key: String
-            var value: String
-            while (bufferedReader.readLine().also { line = it } != null) {
-                val matcher = propertiesPattern.matcher(line)
-                if (matcher.matches()) {
-                    key = matcher.group(1)
-                    value = matcher.group(2)
-                    if (key != null && value != null && !key.isEmpty() && !value.isEmpty()) systemProperties[key] =
-                        value
+            BufferedReader(InputStreamReader(process.inputStream)).use { bufferedReader ->
+                var line: String?
+                while (bufferedReader.readLine().also { line = it } != null) {
+                    val matcher = propertiesPattern.matcher(line)
+                    if (matcher.matches()) {
+                        val key = matcher.group(1)
+                        val value = matcher.group(2)
+                        if (key != null && value != null && key.isNotEmpty() && value.isNotEmpty()) {
+                            systemProperties[key] = value
+                        }
+                    }
                 }
             }
-            bufferedReader.close()
-            process.destroy()
         } catch (e: IOException) {
             Logs.e(
                 "Failed to get run \"/system/bin/getprop\" to get system properties.", e
             )
+        } finally {
+            try {
+                process?.destroy()
+            } catch (e: Exception) {
+                Logs.w(e)
+            }
         }
 
         //for (String key : systemProperties.stringPropertyNames()) {

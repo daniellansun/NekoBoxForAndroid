@@ -24,6 +24,7 @@ import io.nekohasekai.sagernet.BuildConfig
 import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.databinding.LayoutAboutBinding
 import io.nekohasekai.sagernet.ktx.*
+import io.nekohasekai.sagernet.ktx.isGitHubHttpsUrl
 import io.nekohasekai.sagernet.plugin.PluginManager.loadString
 import io.nekohasekai.sagernet.utils.PackageCache
 import io.nekohasekai.sagernet.widget.ListListener
@@ -260,6 +261,10 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                                     )
                                 )
                                 .setPositiveButton(R.string.yes) { _, _ ->
+                                    if (!isGitHubHttpsUrl(releaseUrl)) {
+                                        Logs.w("Rejected update URL")
+                                        return@setPositiveButton
+                                    }
                                     val intent = Intent(Intent.ACTION_VIEW, releaseUrl.toUri())
                                     context.startActivity(intent)
                                 }

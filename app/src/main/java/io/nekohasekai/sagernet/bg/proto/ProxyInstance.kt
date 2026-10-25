@@ -24,7 +24,9 @@ class ProxyInstance(profile: ProxyEntity, var service: BaseService.Interface? = 
         super.buildConfig()
         lastSelectorGroupId = super.config.selectorGroupId
         //
-        if (notTmp) Logs.d(config.config)
+        // The generated JSON contains outbound credentials. Keep the size for
+        // diagnosis and leave the body out of neko.log.
+        if (notTmp) Logs.d("sing-box config built (${config.config.length} bytes)")
         if (notTmp && BuildConfig.DEBUG) Logs.d(JavaUtil.gson.toJson(config.trafficMap))
     }
 
@@ -36,9 +38,8 @@ class ProxyInstance(profile: ProxyEntity, var service: BaseService.Interface? = 
 
     override suspend fun init() {
         super.init()
-        pluginConfigs.forEach { (_, plugin) ->
-            val (_, content) = plugin
-            Logs.d(content)
+        pluginConfigs.forEach { (port, plugin) ->
+            Logs.d("plugin config ready for port $port (${plugin.second.length} bytes)")
         }
     }
 

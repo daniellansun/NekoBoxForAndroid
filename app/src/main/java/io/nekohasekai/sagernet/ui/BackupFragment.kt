@@ -227,8 +227,8 @@ class BackupFragment : NamedFragment(R.layout.layout_backup) {
                     .addPathSegment(fileName)
                     .build()
 
-                Logs.d("WebDAV backup - Directory URL: $dirUrl")
-                Logs.d("WebDAV backup - File URL: $fileUrl")
+                Logs.d("WebDAV backup - Directory URL: ${redactUrlUserInfo(dirUrl.toString())}")
+                Logs.d("WebDAV backup - File URL: ${redactUrlUserInfo(fileUrl.toString())}")
 
                 // 先检查目录是否存在
                 val propfindRequest = Request.Builder()
@@ -352,7 +352,7 @@ class BackupFragment : NamedFragment(R.layout.layout_backup) {
                     }
                 }.build()
 
-                Logs.d("WebDAV restore - Directory URL: $dirUrl")
+                Logs.d("WebDAV restore - Directory URL: ${redactUrlUserInfo(dirUrl.toString())}")
 
                 // 先列出目录内容找到最新的备份文件
                 val propfindRequest = Request.Builder()
@@ -388,7 +388,11 @@ class BackupFragment : NamedFragment(R.layout.layout_backup) {
                         val matches = pattern.findAll(responseBody)
                         matches.forEach { match ->
                             val href = match.value
-                            Logs.d("WebDAV restore - Found backup file with pattern ${pattern.pattern}: $href")
+                            Logs.d(
+                                "WebDAV restore - Found backup file with pattern ${pattern.pattern}: ${
+                                    redactUrlUserInfo(href)
+                                }"
+                            )
                             val fileName = """nekobox_backup_[^<]*?\d{8}_\d{6}\.(json|zip)""".toRegex()
                                 .find(href)?.value
                             if (fileName != null) {
@@ -409,7 +413,7 @@ class BackupFragment : NamedFragment(R.layout.layout_backup) {
                 val fileUrl = dirUrl.newBuilder()
                     .addPathSegment(latestBackup)
                     .build()
-                Logs.d("WebDAV restore - File URL: $fileUrl")
+                Logs.d("WebDAV restore - File URL: ${redactUrlUserInfo(fileUrl.toString())}")
 
                 val getRequest = Request.Builder()
                     .url(fileUrl)
