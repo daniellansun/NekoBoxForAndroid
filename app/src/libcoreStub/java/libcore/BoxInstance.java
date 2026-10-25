@@ -15,7 +15,9 @@ public final class BoxInstance {
     public void setV2rayStats(String outbounds) {}
 
     public long queryStats(String tag, String direct) {
-        return 0L;
+        // Non-zero so JVM tests can execute the traffic-delta branches.
+        // The real gomobile method is still the one in libcore.aar.
+        return 8L;
     }
 
     public boolean selectOutbound(String tag) {
