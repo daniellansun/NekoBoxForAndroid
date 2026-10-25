@@ -676,7 +676,7 @@ private class MemoryGroups : GroupDirectory {
     }
 }
 
-private class MemoryKvDao : KeyValuePair.Dao {
+internal class MemoryKvDao : KeyValuePair.Dao {
     private val rows = linkedMapOf<String, KeyValuePair>()
     override fun all() = rows.values.toList()
     override fun get(key: String) = rows[key]

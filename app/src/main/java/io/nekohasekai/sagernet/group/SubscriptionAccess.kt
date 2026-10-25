@@ -23,6 +23,7 @@ internal interface SubscriptionClient {
     fun readContent(link: String): String?
     fun noProxiesFound(): String
     fun noProxiesInSubscription(): String
+    fun noProxiesFoundInFile(): String
 }
 
 internal class SubscriptionFetch(
@@ -57,15 +58,30 @@ internal object ProductionSubscriptionClient : SubscriptionClient {
         )
     }
 
-    override fun readContent(link: String): String? {
-        return app.contentResolver.openInputStream(link.toUri())
-            ?.bufferedReader()
-            ?.readText()
-    }
+    override fun readContent(link: String): String? = readContentText(link)
 
-    override fun noProxiesFound() = app.getString(R.string.no_proxies_found)
-    override fun noProxiesInSubscription() = app.getString(R.string.no_proxies_found_in_subscription)
+    override fun noProxiesFound() = noProxiesFoundText()
+    override fun noProxiesInSubscription() = noProxiesInSubscriptionText()
+    override fun noProxiesFoundInFile() = noProxiesInFileText()
 }
+
+/** Production still reads the app resources. Tests replace the lambdas. */
+@Volatile
+internal var readContentText: (String) -> String? = { link ->
+    app.contentResolver.openInputStream(link.toUri())
+        ?.bufferedReader()
+        ?.readText()
+}
+
+@Volatile
+internal var noProxiesFoundText: () -> String = { app.getString(R.string.no_proxies_found) }
+
+@Volatile
+internal var noProxiesInSubscriptionText: () -> String =
+    { app.getString(R.string.no_proxies_found_in_subscription) }
+
+@Volatile
+internal var noProxiesInFileText: () -> String = { app.getString(R.string.no_proxies_found_in_file) }
 
 /**
  * Profile rows written while applying a subscription.

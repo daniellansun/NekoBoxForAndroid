@@ -23,6 +23,9 @@ object HevTunRuntime {
             HevTunNative.TProxyIsRunning()
         } catch (e: UnsatisfiedLinkError) {
             false
+        } catch (e: ExceptionInInitializerError) {
+            // JVM unit tests (and a missing .so) wrap loadLibrary in this error.
+            false
         }
     }
 
@@ -47,7 +50,7 @@ object HevTunRuntime {
         }
     }
 
-    private fun buildConfig(): String {
+    internal fun buildConfig(): String {
         val useAuth = DataStore.mixedInboundHasAuth
         return buildString {
             appendLine("tunnel:")

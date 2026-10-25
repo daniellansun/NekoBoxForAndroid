@@ -130,10 +130,8 @@ abstract class GroupUpdater {
         internal var subscriptionUpdateWarning: () -> String =
             { app.getString(R.string.update_subscription_warning) }
 
-        fun startUpdate(proxyGroup: ProxyGroup, byUser: Boolean) {
-            runOnDefaultDispatcher {
-                executeUpdate(proxyGroup, byUser)
-            }
+        fun startUpdate(proxyGroup: ProxyGroup, byUser: Boolean) = runOnDefaultDispatcher {
+            executeUpdate(proxyGroup, byUser)
         }
 
         suspend fun executeUpdate(proxyGroup: ProxyGroup, byUser: Boolean): Boolean {

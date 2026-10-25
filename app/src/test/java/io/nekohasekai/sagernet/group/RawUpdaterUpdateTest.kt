@@ -341,6 +341,7 @@ private class FakeSubscriptionClient(
     override fun readContent(link: String): String? = content
     override fun noProxiesFound() = "no proxies"
     override fun noProxiesInSubscription() = "no proxies in subscription"
+    override fun noProxiesFoundInFile() = "no proxies in file"
 }
 
 private class MemoryProfileStore : ProfileStore {

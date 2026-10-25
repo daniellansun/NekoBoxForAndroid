@@ -73,31 +73,15 @@ public class JavaUtil {
             return;
         }
         try {
-            Set<String> pathSet = new HashSet<>();
-            String suffix;
             String dataPath = context.getDataDir().getAbsolutePath();
-            String webViewDir = "/app_webview";
-            String huaweiWebViewDir = "/app_hws_webview";
-            String lockFile = "/webview_data.lock";
             String processName = Application.getProcessName();
+            String directorySuffix = null;
             if (!BuildConfig.APPLICATION_ID.equals(processName)) {//判断不等于默认进程名称
-                suffix = TextUtils.isEmpty(processName) ? context.getPackageName() : processName;
-                WebView.setDataDirectorySuffix(suffix);
-                suffix = "_" + suffix;
-                pathSet.add(dataPath + webViewDir + suffix + lockFile);
-                if (checkIsHuaweiRom()) {
-                    pathSet.add(dataPath + huaweiWebViewDir + suffix + lockFile);
-                }
-            } else {
-                //主进程
-                suffix = "_" + processName;
-                pathSet.add(dataPath + webViewDir + lockFile);//默认未添加进程名后缀
-                pathSet.add(dataPath + webViewDir + suffix + lockFile);//系统自动添加了进程名后缀
-                if (checkIsHuaweiRom()) {//部分华为手机更改了webview目录名
-                    pathSet.add(dataPath + huaweiWebViewDir + lockFile);
-                    pathSet.add(dataPath + huaweiWebViewDir + suffix + lockFile);
-                }
+                directorySuffix = TextUtils.isEmpty(processName) ? context.getPackageName() : processName;
+                WebView.setDataDirectorySuffix(directorySuffix);
             }
+            Set<String> pathSet = webviewLockPaths(
+                    dataPath, processName, directorySuffix, checkIsHuaweiRom());
             for (String path : pathSet) {
                 File file = new File(path);
                 if (file.exists()) {
@@ -110,8 +94,37 @@ public class JavaUtil {
         }
     }
 
+    /**
+     * WebView data-lock paths. {@code directorySuffix} is null on the default process.
+     * Otherwise it is the value passed to {@link WebView#setDataDirectorySuffix}.
+     */
+    static Set<String> webviewLockPaths(
+            String dataPath, String processName, String directorySuffix, boolean huawei) {
+        Set<String> pathSet = new HashSet<>();
+        String webViewDir = "/app_webview";
+        String huaweiWebViewDir = "/app_hws_webview";
+        String lockFile = "/webview_data.lock";
+        if (directorySuffix != null) {
+            String suffix = "_" + directorySuffix;
+            pathSet.add(dataPath + webViewDir + suffix + lockFile);
+            if (huawei) {
+                pathSet.add(dataPath + huaweiWebViewDir + suffix + lockFile);
+            }
+        } else {
+            //主进程
+            String suffix = "_" + processName;
+            pathSet.add(dataPath + webViewDir + lockFile);//默认未添加进程名后缀
+            pathSet.add(dataPath + webViewDir + suffix + lockFile);//系统自动添加了进程名后缀
+            if (huawei) {//部分华为手机更改了webview目录名
+                pathSet.add(dataPath + huaweiWebViewDir + lockFile);
+                pathSet.add(dataPath + huaweiWebViewDir + suffix + lockFile);
+            }
+        }
+        return pathSet;
+    }
+
     @TargetApi(Build.VERSION_CODES.P)
-    private static void tryLockOrRecreateFile(File file) {
+    static void tryLockOrRecreateFile(File file) {
         try {
             FileLock tryLock = new RandomAccessFile(file, "rw").getChannel().tryLock();
             if (tryLock != null) {
@@ -129,7 +142,7 @@ public class JavaUtil {
         }
     }
 
-    private static void createFile(File file, boolean deleted) {
+    static void createFile(File file, boolean deleted) {
         try {
             if (deleted && !file.exists()) {
                 file.createNewFile();

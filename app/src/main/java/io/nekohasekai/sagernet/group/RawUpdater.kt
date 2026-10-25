@@ -263,7 +263,7 @@ object RawUpdater : GroupUpdater() {
                 val globalClientFingerprint = yaml["global-client-fingerprint"]?.toString() ?: ""
 
                 for (proxy in (yaml["proxies"] as? (List<Map<String, Any?>>) ?: error(
-                    app.getString(R.string.no_proxies_found_in_file)
+                    subscriptionClient.noProxiesFoundInFile()
                 ))) {
                     // Note: YAML numbers parsed as "Long"
 
