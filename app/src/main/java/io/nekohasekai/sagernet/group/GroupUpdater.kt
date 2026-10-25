@@ -11,6 +11,7 @@ import io.nekohasekai.sagernet.fmt.hysteria.HysteriaBean
 import io.nekohasekai.sagernet.fmt.naive.NaiveBean
 import io.nekohasekai.sagernet.fmt.trojan.TrojanBean
 import io.nekohasekai.sagernet.fmt.trojan_go.TrojanGoBean
+import io.nekohasekai.sagernet.fmt.configSource
 import io.nekohasekai.sagernet.fmt.v2ray.StandardV2RayBean
 import io.nekohasekai.sagernet.fmt.v2ray.isTLS
 import io.nekohasekai.sagernet.ktx.*
@@ -36,10 +37,10 @@ abstract class GroupUpdater {
         var progress by AtomicInteger()
     }
 
-    protected suspend fun forceResolve(
+    internal suspend fun forceResolve(
         profiles: List<AbstractBean>, groupId: Long?
     ) {
-        val ipv6Mode = DataStore.ipv6Mode
+        val ipv6Mode = configSource.ipv6Mode
         val lookupPool = newFixedThreadPoolContext(5, "DNS Lookup")
         val lookupJobs = mutableListOf<Job>()
         val progress = Progress(profiles.size)
@@ -60,10 +61,10 @@ abstract class GroupUpdater {
             lookupJobs.add(GlobalScope.launch(lookupPool) {
                 try {
                     val results = if (
-                        SagerNet.underlyingNetwork != null &&
-                        DataStore.enableFakeDns &&
-                        DataStore.serviceState.started &&
-                        DataStore.serviceMode == Key.MODE_VPN
+                        configSource.enableFakeDns &&
+                        configSource.serviceStarted &&
+                        configSource.serviceMode == Key.MODE_VPN &&
+                        SagerNet.underlyingNetwork != null
                     ) {
                         // FakeDNS
                         SagerNet.underlyingNetwork!!

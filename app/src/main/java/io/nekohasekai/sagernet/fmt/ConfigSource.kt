@@ -1,11 +1,16 @@
 package io.nekohasekai.sagernet.fmt
 
+import android.widget.Toast
+import io.nekohasekai.sagernet.R
+import io.nekohasekai.sagernet.SagerNet
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.ProxyEntity
 import io.nekohasekai.sagernet.database.ProxyGroup
 import io.nekohasekai.sagernet.database.RuleEntity
 import io.nekohasekai.sagernet.database.SagerDatabase
+import io.nekohasekai.sagernet.utils.PackageCache
 import moe.matsuri.nb4a.SingBoxOptionsUtil
+import moe.matsuri.nb4a.plugin.Plugins
 
 /**
  * Values read while building sing-box outbounds and a full config.
@@ -46,12 +51,26 @@ interface ConfigSource {
     val globalCustomConfig: String
     val globalAllowInsecure: Boolean
 
+    /** True while the VPN service reports [io.nekohasekai.sagernet.bg.BaseService.State.started]. */
+    val serviceStarted: Boolean
+
     fun domainStrategy(tag: String): String
     fun groupById(id: Long): ProxyGroup?
     fun proxiesByIds(ids: List<Long>): List<ProxyEntity>
     fun proxyById(id: Long): ProxyEntity?
     fun enabledRules(): List<RuleEntity>
     fun proxiesByGroup(groupId: Long): List<ProxyEntity>
+
+    /** Same result as [Plugins.isUsingMatsuriExe]. */
+    fun usesMatsuriExe(pluginId: String): Boolean
+
+    /** True when [Plugins.getPluginExternal] returns a provider. */
+    fun hasExternalPlugin(pluginId: String): Boolean
+
+    fun packageUid(packageName: String): Int?
+    fun ensurePackagesLoaded()
+    fun warnPackageRuleNeedsVpn(ruleName: String)
+    fun warnMissingOutbound(ruleName: String)
 }
 
 internal object ProductionConfigSource : ConfigSource {
@@ -85,6 +104,7 @@ internal object ProductionConfigSource : ConfigSource {
     override val bypassLanInCore get() = DataStore.bypassLanInCore
     override val globalCustomConfig get() = DataStore.globalCustomConfig
     override val globalAllowInsecure get() = DataStore.globalAllowInsecure
+    override val serviceStarted get() = DataStore.serviceState.started
 
     override fun domainStrategy(tag: String) = SingBoxOptionsUtil.domainStrategy(tag)
     override fun groupById(id: Long) = SagerDatabase.groupDao.getById(id)
@@ -92,6 +112,29 @@ internal object ProductionConfigSource : ConfigSource {
     override fun proxyById(id: Long) = SagerDatabase.proxyDao.getById(id)
     override fun enabledRules() = SagerDatabase.rulesDao.enabledRules()
     override fun proxiesByGroup(groupId: Long) = SagerDatabase.proxyDao.getByGroup(groupId)
+
+    override fun usesMatsuriExe(pluginId: String) = Plugins.isUsingMatsuriExe(pluginId)
+    override fun hasExternalPlugin(pluginId: String) = Plugins.getPluginExternal(pluginId) != null
+    override fun packageUid(packageName: String) = PackageCache[packageName]
+    override fun ensurePackagesLoaded() {
+        PackageCache.awaitLoadSync()
+    }
+
+    override fun warnPackageRuleNeedsVpn(ruleName: String) {
+        Toast.makeText(
+            SagerNet.application,
+            SagerNet.application.getString(R.string.route_need_vpn, ruleName),
+            Toast.LENGTH_SHORT,
+        ).show()
+    }
+
+    override fun warnMissingOutbound(ruleName: String) {
+        Toast.makeText(
+            SagerNet.application,
+            "Warning: $ruleName: A non-existent outbound was specified.",
+            Toast.LENGTH_LONG,
+        ).show()
+    }
 }
 
 @Volatile

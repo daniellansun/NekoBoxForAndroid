@@ -38,7 +38,12 @@ internal class MemoryConfigSource : ConfigSource {
     override var bypassLanInCore: Boolean = false
     override var globalCustomConfig: String = ""
     override var globalAllowInsecure: Boolean = false
+    override var serviceStarted: Boolean = false
     var domainStrategyResult: String = "prefer_ipv4"
+    var matsuriPlugins: Set<String> = emptySet()
+    var externalPlugins: Set<String> = emptySet()
+    val packageUids = mutableMapOf<String, Int>()
+    val warnings = mutableListOf<String>()
 
     val groups = mutableMapOf<Long, ProxyGroup>()
     val proxies = mutableMapOf<Long, ProxyEntity>()
@@ -50,6 +55,17 @@ internal class MemoryConfigSource : ConfigSource {
     override fun proxyById(id: Long) = proxies[id]
     override fun enabledRules() = rules.toList()
     override fun proxiesByGroup(groupId: Long) = proxies.values.filter { it.groupId == groupId }
+    override fun usesMatsuriExe(pluginId: String) = pluginId in matsuriPlugins
+    override fun hasExternalPlugin(pluginId: String) = pluginId in externalPlugins
+    override fun packageUid(packageName: String) = packageUids[packageName]
+    override fun ensurePackagesLoaded() {}
+    override fun warnPackageRuleNeedsVpn(ruleName: String) {
+        warnings += "vpn:$ruleName"
+    }
+
+    override fun warnMissingOutbound(ruleName: String) {
+        warnings += "missing:$ruleName"
+    }
 
     fun add(entity: ProxyEntity) {
         proxies[entity.id] = entity

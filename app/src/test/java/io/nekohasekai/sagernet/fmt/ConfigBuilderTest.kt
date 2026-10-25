@@ -10,6 +10,9 @@ import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_CONFIG
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_HTTP
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_HYSTERIA
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_JUICITY
+import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_MIERU
+import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_NAIVE
+import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_NEKO
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_SHADOWTLS
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_SNELL
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_SOCKS
@@ -17,6 +20,7 @@ import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_SS
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_SSR
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_SSH
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_TROJAN
+import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_TROJAN_GO
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_TUIC
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_VMESS
 import io.nekohasekai.sagernet.database.ProxyEntity.Companion.TYPE_WG
@@ -32,11 +36,15 @@ import io.nekohasekai.sagernet.fmt.snell.SnellBean
 import io.nekohasekai.sagernet.fmt.socks.SOCKSBean
 import io.nekohasekai.sagernet.fmt.ssh.SSHBean
 import io.nekohasekai.sagernet.fmt.trojan.TrojanBean
+import io.nekohasekai.sagernet.fmt.mieru.MieruBean
+import io.nekohasekai.sagernet.fmt.naive.NaiveBean
+import io.nekohasekai.sagernet.fmt.trojan_go.TrojanGoBean
 import io.nekohasekai.sagernet.fmt.tuic.TuicBean
 import io.nekohasekai.sagernet.fmt.http.HttpBean
 import io.nekohasekai.sagernet.fmt.v2ray.VMessBean
 import io.nekohasekai.sagernet.fmt.wireguard.WireGuardBean
 import moe.matsuri.nb4a.proxy.anytls.AnyTLSBean
+import moe.matsuri.nb4a.proxy.neko.NekoBean
 import moe.matsuri.nb4a.proxy.config.ConfigBean
 import moe.matsuri.nb4a.proxy.shadowtls.ShadowTLSBean
 import org.json.JSONObject
@@ -186,6 +194,147 @@ class ConfigBuilderTest {
                 assertTrue(json.getJSONArray("inbounds").length() >= 1)
             }
         }
+    }
+
+    @Test
+    fun externalMappingPluginsAndPackageRules() {
+        val source = MemoryConfigSource().apply {
+            serviceMode = "proxy"
+            enableTLSFragment = true
+            enableFakeDns = false
+            enableDnsRouting = true
+            packageUids["com.example.ok"] = 10123
+            packageUids["com.example.system"] = 50
+        }
+        val hy = hysteriaExternal(40)
+        source.add(hy)
+        source.groups[1L] = ProxyGroup(id = 1L)
+        hy.groupId = 1L
+        val mapped = JSONObject(withConfig(source) { buildConfig(hy).config })
+        val inboundTags = mapped.getJSONArray("inbounds").toString()
+        assertTrue(inboundTags.contains("mapping-40"))
+        assertTrue(mapped.toString().contains("\"type\":\"socks\""))
+
+        source.matsuriPlugins = setOf("hysteria-plugin")
+        val exe = JSONObject(withConfig(source) { buildConfig(hy).config })
+        assertFalse(exe.getJSONArray("inbounds").toString().contains("mapping-40"))
+
+        source.matsuriPlugins = emptySet()
+        source.externalPlugins = setOf("hysteria-plugin")
+        val thrown = assertThrows(Exception::class.java) {
+            withConfig(source) { buildConfig(hy) }
+        }
+        assertTrue(thrown.message!!.contains("hysteria-plugin"))
+        source.externalPlugins = emptySet()
+
+        val socksHop = socks("after.example", 41, groupId = 1, name = "after")
+        source.add(socksHop)
+        val chain = profile(42, 1, TYPE_CHAIN, ChainBean().apply {
+            initializeDefaultValues()
+            name = "ext-chain"
+            proxies = listOf(socksHop.id, hy.id)
+        })
+        source.add(chain)
+        val chained = withConfig(source) { buildConfig(chain).config }
+        assertTrue(chained.contains("mapping-40"))
+        assertTrue(chained.contains("after"))
+
+        source.add(profile(43, 1, TYPE_NEKO, NekoBean().apply {
+            initializeDefaultValues()
+            name = "neko"
+            serverAddress = "neko.example"
+        }))
+        val neko = source.proxies[43L]!!
+        assertTrue(withConfig(source) { buildConfig(neko).config }.contains("\"socks\""))
+
+        source.rules += RuleEntity(
+            id = 9,
+            name = "apps",
+            packages = setOf("com.example.ok", "com.example.system", "com.example.missing"),
+            outbound = -1,
+        )
+        source.rules += RuleEntity(
+            id = 10,
+            name = "gone",
+            domains = "missing.example",
+            outbound = 999,
+        )
+        source.rules += RuleEntity(
+            id = 11,
+            domains = "direct.example",
+            ruleset = "rssite:https://example.com/site.json",
+            outbound = -1,
+        )
+        source.rules += RuleEntity(
+            id = 12,
+            domains = "remote.example",
+            ruleset = "rssite:https://example.com/remote.json",
+            outbound = 0,
+        )
+        source.rules += RuleEntity(
+            id = 13,
+            domains = "block.example",
+            ruleset = "rssite:https://example.com/block.json",
+            outbound = -2,
+        )
+        val ruled = withConfig(source) { buildConfig(hy).config }
+        assertTrue(source.warnings.any { it.startsWith("vpn:") })
+        assertTrue(source.warnings.any { it.startsWith("missing:") })
+        assertTrue(ruled.contains("10123"))
+        assertTrue(ruled.contains("dns-direct"))
+        assertTrue(ruled.contains("dns-remote"))
+        assertTrue(ruled.contains("dns-block"))
+    }
+
+    @Test
+    fun configBeanHostsAndInvalidJson() {
+        val source = MemoryConfigSource().apply {
+            enableDnsRouting = true
+        }
+        val cfg = profile(50, 2, TYPE_CONFIG, ConfigBean().apply {
+            initializeDefaultValues()
+            name = "cfg"
+            type = 1
+            config = """{"type":"direct","server":"cfg.example"}"""
+            serverAddress = "fallback.example"
+        })
+        source.add(cfg)
+        source.groups[2L] = ProxyGroup(id = 2L)
+        val json = withConfig(source) { buildConfig(cfg).config }
+        assertTrue(json.contains("cfg.example"))
+
+        val bad = profile(51, 2, TYPE_CONFIG, ConfigBean().apply {
+            initializeDefaultValues()
+            name = "bad"
+            type = 1
+            config = "not-json"
+            serverAddress = "bad-json.example"
+        })
+        val tail = socks("tail.example", 52, groupId = 2, name = "tail")
+        source.add(bad)
+        source.add(tail)
+        val chain = profile(53, 2, TYPE_CHAIN, ChainBean().apply {
+            initializeDefaultValues()
+            name = "bad-chain"
+            proxies = listOf(tail.id, bad.id)
+        })
+        source.add(chain)
+        assertThrows(Exception::class.java) {
+            withConfig(source) { buildConfig(chain) }
+        }
+    }
+
+    private fun hysteriaExternal(id: Int): ProxyEntity {
+        return profile(id, 1, TYPE_HYSTERIA, HysteriaBean().apply {
+            initializeDefaultValues()
+            name = "hy-ext"
+            protocolVersion = 1
+            protocol = HysteriaBean.PROTOCOL_WECHAT_VIDEO
+            serverAddress = "hy-ext.example"
+            serverPorts = "443"
+            authPayloadType = HysteriaBean.TYPE_STRING
+            authPayload = "auth"
+        })
     }
 
     private fun populatedVpnSource(): MemoryConfigSource {
@@ -496,6 +645,10 @@ class ConfigBuilderTest {
                 TYPE_SNELL -> snellBean = bean as SnellBean
                 TYPE_CONFIG -> configBean = bean as ConfigBean
                 TYPE_CHAIN -> chainBean = bean as ChainBean
+                TYPE_TROJAN_GO -> trojanGoBean = bean as TrojanGoBean
+                TYPE_MIERU -> mieruBean = bean as MieruBean
+                TYPE_NAIVE -> naiveBean = bean as NaiveBean
+                TYPE_NEKO -> nekoBean = bean as NekoBean
                 else -> error("type $type")
             }
         }

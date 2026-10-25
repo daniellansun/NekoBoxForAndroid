@@ -80,6 +80,44 @@ JaCoCo 扫到 876 个第一方 `.class`（771 个 JaCoCo 类、207 个有可执�
 
 替换点：`ConfigBuilder.kt` 里原来的 `DataStore.*`、`SagerDatabase.*Dao`、`SingBoxOptionsUtil.domainStrategy`；以及 `V2RayFmt.buildSingBoxOutboundTLS`、Hysteria / TUIC / Juicity 的 sing-box TLS、`buildNaiveConfig`、`buildTrojanGoConfig` 里的 `globalAllowInsecure` / `logLevel` / `ipv6Mode`。
 
+
+## 第三批（插件映射、订阅更新、选项构造）
+
+52 个 JVM 测试，0 失败（本批新增 10 个）。`./gradlew :app:jacocoFirstPartyReport`（`SKIP_HEV=1`）通过。
+
+| 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第二批 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 行（LINE） | 5272 | 10945 | 16217 | **32.51%** | +1007 行；分母 +33 |
+| 指令（INSTRUCTION） | 35054 | 77371 | 112425 | **31.18%** | +5985；分母 +121 |
+| 分支（BRANCH） | 3452 | 6062 | 9514 | **36.28%** | +511；分母 +2 |
+| 方法（METHOD） | 755 | 3060 | 3815 | **19.79%** | +231；分母 +26 |
+| 类（CLASS） | 253 | 524 | 777 | **32.56%** | +104；分母 +4 |
+
+分母多出的行来自 `ConfigSource` 上新的插件 / 包名 / 警告方法，以及 `SubscriptionAccess.kt`（订阅 HTTP 与资料库写入的生产委托）。JaCoCo 扫到 885 个第一方 `.class`（777 个 JaCoCo 类）。
+
+| 源文件 | 第二批 | 第三批 |
+| --- | ---: | ---: |
+| `fmt/ConfigBuilder.kt` | 600/698 | **686/690** |
+| `group/RawUpdater.kt` | 487/646 | **619/631** |
+| `group/GroupUpdater.kt` | 0/85 | **57/85** |
+| `nb4a/SingBoxOptions.java` | 82/171 | **169/171** |
+| `database/ProxyEntity.kt` | 96/365 | **314/365** |
+| `database/ProxyGroup.kt` | — | **52/55** |
+| `database/preference/KeyValuePair.kt` | 0/71 | **54/71** |
+| `fmt/KryoConverters.java` | 19/60 | **58/60** |
+| `ktx/Formats.kt` | 126/176 | **165/176** |
+| `ktx/Utils.kt` | 23/158 | **36/158** |
+| `database` 包 | 131/961 | **489/961** |
+| `database/DataStore.kt` | 0/206 | 0/206 |
+
+`ConfigBuilder` 剩下 4 行，是当前协议集合到不了的 `else` 分支。`RawUpdater` 剩下 12 行，多数是 `parseRaw` 里没喂到的分支。`doUpdate` 的插入、改名、去重、过滤、更新、重排、删除、content URI 和 `forceResolve` 都在 JVM 上跑过。
+
+### 本批的缝
+
+- `ConfigSource` 增加 `usesMatsuriExe`、`hasExternalPlugin`、`packageUid`、`ensurePackagesLoaded`、两条警告，以及 `serviceStarted`。生产实现仍在调用时走 `Plugins`、`PackageCache`、`Toast` 和 `DataStore.serviceState`。测试用内存实现，不弹 Toast、不开 Room。
+- `SubscriptionClient` / `ProfileStore` 把 `doUpdate` 的 libcore HTTP、content URI 和 `SagerDatabase` 写入收成调用时委托。`ProductionSubscriptionClient` 仍用原来的 `Libcore.newHttpClient()`、`DataStore` 端口和 `allowInsecure`。`ProductionProfileStore` 仍调用原来的 DAO。测试替换这两个 `@Volatile` 变量。
+- `GroupUpdater.forceResolve` 改读 `configSource` 的 IPv6、fake DNS 和服务状态，不再在这条路径上碰 `DataStore`。假 DNS 走系统网络的分支仍要 `SagerNet.underlyingNetwork` 非空才会进。
+
 ## 复现
 
 需要 JDK 17+（本次为 21）、Android SDK `platforms;android-35` 与 `build-tools;35.0.1`。`local.properties` 的 `sdk.dir` 或 `ANDROID_HOME` 指向 SDK。
@@ -136,52 +174,52 @@ export SKIP_HEV=1                         # 单元测试不需要 libhev-socks5-
 
 JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`SingBoxOptions.java` 约 4846 行源码，绝大多数是字段声明，JaCoCo 只记到 171 行。
 
-## 分包表（第二批之后）
+## 分包表（第三批之后）
 
-行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。`fmt` 合计从 904 变为 942，即 `ConfigSource.kt`。`ktx` 的 513 行来自第一批把反射查找改成 `by lazy`。
+行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。`fmt` 现为 952 行（`ConfigSource` 及其生产委托）。`group` 现为 806 行（含 `SubscriptionAccess.kt`）。`ktx` 的 513 行来自第一批把反射查找改成 `by lazy`。
 
 | 包 | 行 | 指令 | 分支 | 方法 | 类 |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | `io.nekohasekai.sagernet.ui` | 0/5183 | 0/32782 | 0/2568 | 0/1072 | 0/250 |
 | `io.nekohasekai.sagernet.ui.profile` | 0/1272 | 0/7943 | 0/339 | 0/255 | 0/42 |
-| `io.nekohasekai.sagernet.database` | 131/961 | 1088/11447 | 48/467 | 55/601 | 7/35 |
-| `io.nekohasekai.sagernet.fmt` | 669/942 | 4173/6102 | 423/637 | 42/133 | 8/14 |
-| `io.nekohasekai.sagernet.fmt.v2ray` | 836/939 | 5427/6096 | 546/817 | 64/67 | 6/6 |
+| `io.nekohasekai.sagernet.database` | 489/961 | 2822/11447 | 252/467 | 94/601 | 9/35 |
+| `io.nekohasekai.sagernet.fmt` | 829/952 | 5345/6148 | 541/639 | 68/140 | 10/14 |
+| `io.nekohasekai.sagernet.fmt.v2ray` | 837/939 | 5431/6096 | 549/817 | 64/67 | 6/6 |
+| `io.nekohasekai.sagernet.group` | 685/806 | 5463/6960 | 619/1011 | 30/63 | 8/22 |
 | `io.nekohasekai.sagernet.bg` | 0/803 | 0/5516 | 0/392 | 0/216 | 0/46 |
-| `io.nekohasekai.sagernet.group` | 490/783 | 3907/6885 | 524/1011 | 8/44 | 2/18 |
 | `io.nekohasekai.sagernet.widget` | 0/518 | 0/3095 | 0/315 | 0/140 | 0/26 |
-| `io.nekohasekai.sagernet.ktx` | 178/513 | 1385/4033 | 105/214 | 39/190 | 6/25 |
+| `io.nekohasekai.sagernet.ktx` | 240/513 | 1884/4033 | 127/214 | 52/190 | 6/25 |
 | `io.nekohasekai.sagernet.bg.proto` | 0/419 | 0/3149 | 0/206 | 0/101 | 0/17 |
 | `io.nekohasekai.sagernet.utils` | 87/407 | 615/2752 | 85/303 | 15/91 | 4/22 |
-| `moe.matsuri.nb4a` | 205/374 | 1546/2703 | 199/384 | 88/206 | 57/152 |
-| `moe.matsuri.nb4a.utils` | 179/356 | 1344/2390 | 99/206 | 34/58 | 4/6 |
+| `moe.matsuri.nb4a` | 301/374 | 1915/2703 | 215/384 | 180/206 | 145/152 |
+| `moe.matsuri.nb4a.utils` | 181/356 | 1348/2390 | 100/206 | 35/58 | 4/6 |
 | `io.nekohasekai.sagernet.fmt.hysteria` | 309/321 | 2094/2202 | 244/300 | 19/22 | 3/3 |
 | `moe.matsuri.nb4a.ui` | 0/307 | 0/2032 | 0/72 | 0/101 | 0/18 |
-| `io.nekohasekai.sagernet` | 0/175 | 0/918 | 0/74 | 0/62 | 0/8 |
-| `io.nekohasekai.sagernet.database.preference` | 0/151 | 0/952 | 0/73 | 0/68 | 0/10 |
-| `moe.matsuri.nb4a.proxy.anytls` | 115/145 | 653/930 | 66/92 | 10/17 | 3/4 |
-| `io.nekohasekai.sagernet.fmt.trojan_go` | 130/144 | 875/1002 | 75/120 | 11/13 | 3/3 |
-| `io.nekohasekai.sagernet.fmt.shadowsocks` | 130/135 | 794/868 | 62/82 | 12/14 | 3/3 |
-| `io.nekohasekai.sagernet.fmt.tuic` | 121/125 | 736/776 | 75/96 | 10/13 | 3/3 |
-| `io.nekohasekai.sagernet.fmt.snell` | 113/119 | 924/1023 | 124/178 | 11/15 | 4/4 |
-| `io.nekohasekai.sagernet.fmt.naive` | 91/94 | 638/664 | 60/76 | 11/13 | 3/3 |
+| `io.nekohasekai.sagernet` | 17/175 | 52/918 | 1/74 | 2/62 | 2/8 |
+| `io.nekohasekai.sagernet.database.preference` | 54/151 | 283/952 | 24/73 | 18/68 | 2/10 |
+| `moe.matsuri.nb4a.proxy.anytls` | 115/145 | 667/930 | 67/92 | 10/17 | 3/4 |
+| `io.nekohasekai.sagernet.fmt.trojan_go` | 130/144 | 889/1002 | 78/120 | 11/13 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.shadowsocks` | 130/135 | 794/868 | 63/82 | 12/14 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.tuic` | 121/125 | 750/776 | 76/96 | 10/13 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.snell` | 115/119 | 930/1023 | 124/178 | 13/15 | 4/4 |
+| `io.nekohasekai.sagernet.fmt.naive` | 92/94 | 652/664 | 61/76 | 11/13 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.shadowsocksr` | 85/87 | 589/614 | 16/20 | 11/13 | 3/3 |
 | `moe.matsuri.nb4a.net` | 0/83 | 0/346 | 0/28 | 0/11 | 0/4 |
-| `io.nekohasekai.sagernet.fmt.juicity` | 78/81 | 510/561 | 45/70 | 11/14 | 3/3 |
-| `io.nekohasekai.sagernet.fmt.socks` | 69/80 | 483/529 | 48/66 | 13/17 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.juicity` | 78/81 | 524/561 | 46/70 | 11/14 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.socks` | 72/80 | 503/529 | 50/66 | 14/17 | 3/3 |
 | `moe.matsuri.nb4a.proxy` | 0/62 | 0/376 | 0/30 | 0/27 | 0/2 |
 | `io.nekohasekai.sagernet.fmt.wireguard` | 54/59 | 250/263 | 18/20 | 9/12 | 3/3 |
 | `moe.matsuri.nb4a.proxy.shadowtls` | 26/56 | 108/339 | 4/4 | 8/15 | 3/4 |
-| `io.nekohasekai.sagernet.fmt.mieru` | 50/54 | 283/309 | 7/12 | 8/10 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.mieru` | 50/54 | 292/309 | 10/12 | 8/10 | 3/3 |
 | `moe.matsuri.nb4a.plugin` | 0/53 | 0/376 | 0/50 | 0/10 | 0/1 |
-| `moe.matsuri.nb4a.proxy.config` | 13/51 | 50/252 | 5/30 | 6/18 | 2/3 |
-| `io.nekohasekai.sagernet.fmt.ssh` | 33/51 | 161/222 | 22/30 | 6/10 | 3/3 |
+| `moe.matsuri.nb4a.proxy.config` | 20/51 | 84/252 | 9/30 | 8/18 | 2/3 |
+| `io.nekohasekai.sagernet.fmt.ssh` | 44/51 | 195/222 | 24/30 | 7/10 | 3/3 |
 | `io.nekohasekai.sagernet.plugin` | 0/46 | 0/283 | 0/32 | 0/12 | 0/3 |
 | `moe.matsuri.nb4a.hevtun` | 0/45 | 0/368 | 0/10 | 0/6 | 0/2 |
-| `io.nekohasekai.sagernet.fmt.http` | 34/42 | 246/282 | 23/32 | 7/11 | 3/3 |
-| `io.nekohasekai.sagernet.fmt.internal` | 15/33 | 55/132 | 5/12 | 7/15 | 3/3 |
-| `io.nekohasekai.sagernet.fmt.trojan` | 23/33 | 132/194 | 13/24 | 8/10 | 3/3 |
-| `moe.matsuri.nb4a.proxy.neko` | 0/32 | 0/110 | 0/4 | 0/14 | 0/2 |
+| `io.nekohasekai.sagernet.fmt.http` | 39/42 | 261/282 | 23/32 | 8/11 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.internal` | 23/33 | 82/132 | 8/12 | 9/15 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.trojan` | 24/33 | 146/194 | 14/24 | 8/10 | 3/3 |
+| `moe.matsuri.nb4a.proxy.neko` | 24/32 | 83/110 | 4/4 | 9/14 | 2/2 |
 | `com.github.shadowsocks.plugin.fragment` | 0/21 | 0/181 | 0/6 | 0/14 | 0/2 |
 | `io.nekohasekai.sagernet.aidl` | 0/19 | 0/253 | 0/2 | 0/31 | 0/3 |
 | `io.nekohasekai.sagernet.fmt.gson` | 0/8 | 0/42 | 0/8 | 0/4 | 0/1 |
@@ -243,7 +281,6 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 | `io.nekohasekai.sagernet.ui.MainActivity.kt` | 323 | 0/323 |
 | `io.nekohasekai.sagernet.ui.GroupFragment.kt` | 322 | 0/322 |
 | `io.nekohasekai.sagernet.ui.GroupSettingsActivity.kt` | 316 | 0/316 |
-| `io.nekohasekai.sagernet.database.ProxyEntity.kt` | 269 | 96/365 |
 | `io.nekohasekai.sagernet.ui.SettingsPreferenceFragment.kt` | 267 | 0/267 |
 | `io.nekohasekai.sagernet.bg.BaseService.kt` | 246 | 0/246 |
 | `io.nekohasekai.sagernet.ui.AssetsActivity.kt` | 245 | 0/245 |
@@ -252,25 +289,25 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 | `io.nekohasekai.sagernet.ui.AppManagerActivity.kt` | 228 | 0/228 |
 | `io.nekohasekai.sagernet.database.DataStore.kt` | 206 | 0/206 |
 | `io.nekohasekai.sagernet.widget.StatsBar.kt` | 197 | 0/197 |
-| `io.nekohasekai.sagernet.group.RawUpdater.kt` | 159 | 487/646 |
-| `io.nekohasekai.sagernet.ktx.Utils.kt` | 135 | 23/158 |
-| `io.nekohasekai.sagernet.fmt.ConfigBuilder.kt` | 98 | 600/698 |
+| `io.nekohasekai.sagernet.ktx.Utils.kt` | 122 | 36/158 |
+| `io.nekohasekai.sagernet.database.ProxyEntity.kt` | 51 | 314/365 |
 
-`ConfigBuilder.kt` 剩下的 98 行主要是：外部插件映射（`Plugins`）、按包名选 UID（`PackageCache` / `Toast`）、部分 DNS ruleset 分支、以及 `ConfigBean` JSON 解析失败的分支。`RawUpdater.kt` 剩下的 159 行里约 149 行是 `doUpdate`。
+`ConfigBuilder.kt` 剩 4 行。`RawUpdater.kt` 剩 12 行。`SingBoxOptions.java` 剩 2 行。`JavaUtil.java` 剩 54 行，主要是 `SDK_INT >= 28` 才进的 WebView 目录锁。`Formats.kt` 剩 11 行。`KryoConverters.java` 剩 2 行。
 
-工具剩余：`JavaUtil.java` 56 行、`Formats.kt` 50 行、`KryoConverters.java` 41 行（各协议的 `*Deserialize`）、`Utils.kt` 135 行（其余多为 Android / 网络）。`SingBoxOptions.java` 还剩 89 行可执行代码，多半是还没被 `asMap` 碰到的内部类构造。`V2RayFmt.kt` 剩 41，`StandardV2RayBean.java` 剩 55，`HysteriaFmt.kt` 剩 4，`TrojanGoFmt.kt` 剩 12。`TuicFmt.kt` 与 `JuicityFmt.kt` 的可执行行已经盖满。
+生产委托故意没在 JVM 上执行，否则会开 Room 或要 `SagerNet.application`：`ConfigSource.kt` 2/56，`SubscriptionAccess.kt` 8/38。`GroupUpdater.executeUpdate` 仍读 `DataStore.serviceState`，约 28 行未覆盖。
 
-## 第三批
+## 第四批
 
-1. **`ConfigBuilder.kt` 剩下的 98 行**。外部插件、包名规则和 Toast 需要 Android / `PackageManager` 替身，不能再靠内存 `ConfigSource`。无效 `ConfigBean` JSON 可以在 JVM 上补一条失败路径。
-2. **`RawUpdater.doUpdate`（约 149 行）**。会发 HTTP 并读 `DataStore`。`parseRaw` 本身只剩约 10 行。
-3. **`SingBoxOptions` 内部类**。可执行行 82/171。继续用 `asMap` / 序列化样例盖构造函数，不必逐字段写。
-4. **工具剩余**。`JavaUtil` 的进程名反射失败以外的分支、`Formats.kt` 各协议 `parse*` 的失败分支、`KryoConverters` 各类型反序列化、`Utils.kt` 里不碰 Android 的片段。
-5. **数据库与后台**。`database` 现为 131/961，其中 `DataStore.kt` 仍是 0/206（一加载就开 Room）。`preference` 0/151，`bg` 0/803，`bg.proto` 0/419。`ProductionConfigSource`（`ConfigSource.kt` 2/38）同样只有在真的读 `DataStore` 时才会执行。
-6. **UI**。`ui` 与 `ui.profile` 合计仍是 0/6455。用仪器测试或 Robolectric。`isReturnDefaultValues` 不能代替界面测试。
-7. **`libcore` Go**。见下一节。补上兄弟仓库后再跑 `go test -cover`。`device`、`procfs` 已经能单独编译。
+1. **`DataStore.kt`（0/206）**。对象初始化就会构造 `RoomPreferenceDataStore`。要覆盖得把 preference 委托改成第一次读取才碰库，或接受在 JVM 上起一个内存 Room。现有 `ProductionConfigSource` / `ProductionSubscriptionClient` / `ProductionProfileStore` 也只有走到这些 getter 才会执行。
+2. **`ProxyEntity.kt` 剩下的 51 行**，以及 `database` 包余下的 472 行（`ProfileManager`、`GroupManager` 里会再进 Room 或 `SubscriptionUpdater` 的路径）。
+3. **`Utils.kt` 122 行**。剩下的大多是 `Context`、`Fragment`、`RecyclerView`。纯委托已经盖过。
+4. **`JavaUtil.handleWebviewDir`**。需要 `SDK_INT >= 28` 和可用的 `Context.getDataDir()`。
+5. **`GroupUpdater.executeUpdate`**。确认弹窗和失败回调读 `DataStore.serviceState.connected`。
+6. **`bg` / `bg.proto`（0/1222）**。没有不碰服务生命周期的便宜缝。
+7. **UI**。`ui` + `ui.profile` 仍是 0/6455。
+8. **`libcore` Go**。见下一节。缺 `../../sing-box` 与 `../../libneko`，第一方 Go 约 1927 行，仍无测试。
 
-仍基本为 0：`fmt.gson`（0/8）、`nb4a.proxy`（0/62）、`nb4a.proxy.neko`（0/32）。`fmt.internal` 15/33，`nb4a.proxy.config` 13/51。
+仍基本为 0：`fmt.gson`（0/8）、`nb4a.proxy`（0/62）、`nb4a.plugin`（0/53）。`nb4a.proxy.neko` 24/32，`nb4a.proxy.config` 20/51。
 
 ## `libcore` Go
 
@@ -303,4 +340,5 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 - 没有改 AnyTLS 的 fingerprint 赋值。测试按当前字节码断言 `utls.fingerprint == null`。
 - 没有把 Room 放进单元测试。`ProductionConfigSource` 仍是生产默认值，getter 在调用时才读 `DataStore`。
 - 没有改 WireGuard `mtu` 为空时 `clone()` 会 NPE 的现有行为。测试夹具写上 `MTU`。
-- 没有调用 `RawUpdater.doUpdate`、`GroupUpdater.forceResolve`，也没有覆盖 UI。
+- 没有在单元测试里执行 `ProductionConfigSource`、`ProductionSubscriptionClient`、`ProductionProfileStore`。它们仍是生产默认值，调用时才读 `DataStore` / Room / `libcore` HTTP。
+- 没有覆盖 UI，也没有跑 `GroupUpdater.executeUpdate`（那条路径读 `DataStore.serviceState`）。

@@ -23,7 +23,6 @@ import io.nekohasekai.sagernet.fmt.v2ray.isTLS
 import io.nekohasekai.sagernet.fmt.v2ray.setTLS
 import io.nekohasekai.sagernet.fmt.wireguard.WireGuardBean
 import io.nekohasekai.sagernet.ktx.*
-import libcore.Libcore
 import moe.matsuri.nb4a.Protocols
 import moe.matsuri.nb4a.proxy.anytls.AnyTLSBean
 import moe.matsuri.nb4a.proxy.config.ConfigBean
@@ -36,7 +35,6 @@ import org.yaml.snakeyaml.TypeDescription
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.error.YAMLException
 import java.io.StringReader
-import androidx.core.net.toUri
 
 @Suppress("EXPERIMENTAL_API_USAGE")
 object RawUpdater : GroupUpdater() {
@@ -52,36 +50,18 @@ object RawUpdater : GroupUpdater() {
         val link = subscription.link
         var proxies: List<AbstractBean>
         if (link.startsWith("content://")) {
-            val contentText = app.contentResolver.openInputStream(link.toUri())
-                ?.bufferedReader()
-                ?.readText()
+            val contentText = subscriptionClient.readContent(link)
 
             proxies = contentText?.let { parseRaw(contentText) }
-                ?: error(app.getString(R.string.no_proxies_found_in_subscription))
+                ?: error(subscriptionClient.noProxiesInSubscription())
         } else {
 
-            val response = Libcore.newHttpClient().apply {
-                trySocks5(
-                    DataStore.mixedPort,
-                    DataStore.mixedInboundUser,
-                    DataStore.mixedInboundPass
-                )
-                tryH3Direct()
-                when (DataStore.appTLSVersion) {
-                    "1.3" -> restrictedTLS()
-                }
-            }.newRequest().apply {
-                if (DataStore.allowInsecureOnRequest) {
-                    allowInsecure()
-                }
-                setURL(subscription.link)
-                setUserAgent(subscription.customUserAgent.takeIf { it.isNotBlank() } ?: USER_AGENT)
-            }.execute()
-            val content = Util.getStringBox(response.contentString)
+            val response = subscriptionClient.fetch(subscription)
+            val content = response.body
             proxies = parseRaw(content)
-                ?: error(app.getString(R.string.no_proxies_found))
+                ?: error(subscriptionClient.noProxiesFound())
 
-            var userinfo = Util.getStringBox(response.getHeader("Subscription-Userinfo"))
+            var userinfo = response.userinfo
             if (userinfo.isBlank()) {
                 findBodyHeader(content, "subscription-userinfo")?.let { userinfo = it }
             }
@@ -91,7 +71,7 @@ object RawUpdater : GroupUpdater() {
             if (proxyGroup.name?.startsWith("Subscription #") == true) {
                 var remoteName = parseBodyProfileTitle(content)
                 if (remoteName.isBlank()) {
-                    remoteName = Util.decodeFilename(Util.getStringBox(response.getHeader("content-disposition")))
+                    remoteName = Util.decodeFilename(response.contentDisposition)
                 }
                 if (remoteName.isNotBlank()) {
                     proxyGroup.name = remoteName
@@ -128,7 +108,7 @@ object RawUpdater : GroupUpdater() {
             Logs.d("After filter (mode=$filterMode): ${proxies.size}")
         }
 
-        val exists = SagerDatabase.proxyDao.getByGroup(proxyGroup.id)
+        val exists = profileStore.proxiesByGroup(proxyGroup.id)
         val duplicate = ArrayList<String>()
         if (subscription.deduplication) {
             Logs.d("Before deduplication: ${proxies.size}")
@@ -155,7 +135,7 @@ object RawUpdater : GroupUpdater() {
         }
 
         if (proxies.isEmpty()) {
-            error(app.getString(R.string.no_proxies_found))
+            error(subscriptionClient.noProxiesFound())
         }
 
         Logs.d("New profiles: ${proxies.size}")
@@ -216,7 +196,7 @@ object RawUpdater : GroupUpdater() {
                 }
             } else {
                 changed++
-                SagerDatabase.proxyDao.addProxy(
+                profileStore.addProxy(
                     ProxyEntity(
                         groupId = proxyGroup.id, userOrder = userOrder
                     ).apply {
@@ -228,22 +208,22 @@ object RawUpdater : GroupUpdater() {
             userOrder++
         }
 
-        SagerDatabase.proxyDao.updateProxy(toUpdate).also {
+        profileStore.updateProxies(toUpdate).also {
             Logs.d("Updated profiles: $it")
         }
 
-        SagerDatabase.proxyDao.deleteProxy(toDelete).also {
+        profileStore.deleteProxies(toDelete).also {
             Logs.d("Deleted profiles: $it")
         }
 
-        val existCount = SagerDatabase.proxyDao.countByGroup(proxyGroup.id).toInt()
+        val existCount = profileStore.countByGroup(proxyGroup.id).toInt()
 
         if (existCount != proxies.size) {
             Logs.e("Exist profiles: $existCount, new profiles: ${proxies.size}")
         }
 
         subscription.lastUpdated = (System.currentTimeMillis() / 1000).toInt()
-        SagerDatabase.groupDao.updateGroup(proxyGroup)
+        profileStore.updateGroup(proxyGroup)
         finishUpdate(proxyGroup)
 
         userInterface?.onUpdateSuccess(

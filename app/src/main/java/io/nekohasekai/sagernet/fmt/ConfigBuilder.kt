@@ -1,6 +1,5 @@
 package io.nekohasekai.sagernet.fmt
 
-import android.widget.Toast
 import io.nekohasekai.sagernet.*
 import io.nekohasekai.sagernet.bg.VpnService
 import io.nekohasekai.sagernet.database.ProxyEntity
@@ -30,10 +29,8 @@ import io.nekohasekai.sagernet.fmt.wireguard.WireGuardBean
 import io.nekohasekai.sagernet.fmt.wireguard.buildSingBoxOutboundWireguardBean
 import io.nekohasekai.sagernet.ktx.isIpAddress
 import io.nekohasekai.sagernet.ktx.mkPort
-import io.nekohasekai.sagernet.utils.PackageCache
 import moe.matsuri.nb4a.*
 import moe.matsuri.nb4a.SingBoxOptions.*
-import moe.matsuri.nb4a.plugin.Plugins
 import moe.matsuri.nb4a.proxy.anytls.AnyTLSBean
 import moe.matsuri.nb4a.proxy.anytls.buildSingBoxOutboundAnyTLSBean
 import moe.matsuri.nb4a.proxy.config.ConfigBean
@@ -534,9 +531,9 @@ fun buildConfig(
                             is HysteriaBean -> if (bean.protocolVersion == 1) "hysteria-plugin" else "hysteria2-plugin"
                             else -> ""
                         }
-                        if (Plugins.isUsingMatsuriExe(pluginId)) {
+                        if (configSource.usesMatsuriExe(pluginId)) {
                             needExternal = false
-                        } else if (Plugins.getPluginExternal(pluginId) != null) {
+                        } else if (configSource.hasExternalPlugin(pluginId)) {
                             throw Exception("You are using an unsupported $pluginId, please download the correct plugin.")
                         }
                     }
@@ -645,23 +642,19 @@ fun buildConfig(
             // 应用用户规则
             for (rule in extraRules) {
                 if (rule.packages.isNotEmpty()) {
-                    PackageCache.awaitLoadSync()
+                    configSource.ensurePackagesLoaded()
                 }
                 val uidList = rule.packages.map {
                     if (!isVPN) {
-                        Toast.makeText(
-                            SagerNet.application,
-                            SagerNet.application.getString(R.string.route_need_vpn, rule.displayName()),
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        configSource.warnPackageRuleNeedsVpn(rule.displayName())
                     }
-                    PackageCache[it]?.takeIf { uid -> uid >= 1000 }
+                    configSource.packageUid(it)?.takeIf { uid -> uid >= 1000 }
                 }.toHashSet().filterNotNull()
                 val ruleSets = mutableListOf<RuleSet>()
 
                 val ruleObj = Rule_DefaultOptions().apply {
                     if (uidList.isNotEmpty()) {
-                        PackageCache.awaitLoadSync()
+                        configSource.ensurePackagesLoaded()
                         user_id = uidList
                     }
                     var domainList: List<String>? = null
@@ -839,11 +832,7 @@ fun buildConfig(
 
                 if (!ruleObj.checkEmpty()) {
                     if (ruleObj.outbound.isNullOrBlank()) {
-                        Toast.makeText(
-                            SagerNet.application,
-                            "Warning: " + rule.displayName() + ": A non-existent outbound was specified.",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        configSource.warnMissingOutbound(rule.displayName())
                     } else {
                         // block 改用新的写法
                         if (ruleObj.outbound == TAG_BLOCK) {
