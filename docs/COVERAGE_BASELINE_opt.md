@@ -295,31 +295,31 @@ exit $status
 
 JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`SingBoxOptions.java` 约 4846 行源码，绝大多数是字段声明，JaCoCo 只记到 171 行。
 
-## 分包表（第十四批之后）
+## 分包表（第十五批之后）
 
-行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。下表来自第十四批行数较低的那次本仓库 XML，页脚是行 **14819/16338**、指令 **100496/113365**、分支 **6777/9564**。另一次是行 **14821**、指令 **100474**、分支 **6775**。两次差 2 行，只动 `GuardedProcessPool`、`ConfigurationFragment` 和 `MainActivity`。指令和分支的方向相反：行数较低的一次指令多 22、分支多 2。这张表用较低的行页脚。它相对第十三批第一次本仓库 XML（行 14539）合计多 280 行。相对 Test 验收的第十三批 14537，较低行页脚多 282 行。多出来的 2 行是那份本仓库 XML 比 Test 多出来的，不要把这张表当成 Test 的页脚。
+行 / 指令 / 分支 / 方法 / 类的写法都是 `已覆盖/合计`。下表来自第十五批行数较低的那次本仓库 XML，页脚是行 **15152/16338**、指令 **102285/113365**、分支 **6915/9564**。另一次是行 **15154**、指令 **102271**、分支 **6915**。两次差 2 行。指令方向相反：行数较低的一次指令多 14。分支两次相同。只动 `ConfigurationFragment`、`GuardedProcessPool` 和 `ProfileSettingsActivity`。这张表用较低的行页脚。它相对第十四批行数较低的本仓库 XML（行 14819）合计多 333 行。相对 Test 验收的第十四批 14820，较低行页脚多 332 行。少掉的 1 行是那份本仓库 XML 比 Test 少出来的，不要把这张表当成 Test 的页脚。
 
-**第十四批验收基线是 Test 在 `26c78d6` 的 14820/16338（90.71%），指令 100473/113365，分支 6775/9564。** 102 个测试，0 失败。不要把第十四批写成 14819 或 14821。这张表不是那份验收页脚。Test 的行数在两次本仓库 XML 之间（14819 与 14821）。**第十三批验收基线是 Test 在 `5f41659` 的 14537/16338（88.98%），指令 98732/113365，分支 6622/9564。** 97 个测试，0 失败。不要把第十三批写成 14539 或 14540。第十二批验收基线是 Test 在 `c6ad074` 的 **14224/16338（87.06%）**，指令 **96486/113365**，分支 **6454/9564**。93 个测试，0 失败。不要把第十二批写成 14227。第十一批验收基线是 Test 在 `b61ad54` 的 **13841/16338（84.72%）**，指令 **94165/113365**，分支 **6288/9564**。第十批验收基线是 Test 的 **13512/16338**。第九批验收基线是 Test 的 **12965/16333**。分母没有变。`ConfigurationFragment` 第 209–210 行和 `GuardedProcessPool` 第 44 行仍会单独翻。
+**第十四批验收基线是 Test 在 `26c78d6` 的 14820/16338（90.71%），指令 100473/113365，分支 6775/9564。** 102 个测试，0 失败。不要把第十四批写成 14819 或 14821。这张表不是那份验收页脚，第十五批也还没有 Test 验收。**第十三批验收基线是 Test 在 `5f41659` 的 14537/16338（88.98%），指令 98732/113365，分支 6622/9564。** 97 个测试，0 失败。不要把第十三批写成 14539 或 14540。第十二批验收基线是 Test 在 `c6ad074` 的 **14224/16338（87.06%）**，指令 **96486/113365**，分支 **6454/9564**。93 个测试，0 失败。不要把第十二批写成 14227。第十一批验收基线是 Test 在 `b61ad54` 的 **13841/16338（84.72%）**，指令 **94165/113365**，分支 **6288/9564**。第十批验收基线是 Test 的 **13512/16338**。第九批验收基线是 Test 的 **12965/16333**。分母没有变。这次翻掉的是 `ConfigurationFragment` 全局模式重载的第 875–876、878–879、886 行，`GuardedProcessPool` 第 106 行，以及 `ProfileSettingsActivity` 未保存对话框确定按钮的第 56–57 行。
 
 | 包 | 行 | 指令 | 分支 | 方法 | 类 |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `io.nekohasekai.sagernet.ui` | 4658/5183 | 28653/32791 | 1720/2568 | 913/1072 | 232/250 |
-| `io.nekohasekai.sagernet.widget` | 354/518 | 2016/3095 | 158/315 | 95/140 | 21/26 |
-| `io.nekohasekai.sagernet.ui.profile` | 1123/1272 | 6886/7943 | 202/339 | 202/255 | 41/42 |
-| `moe.matsuri.nb4a.ui` | 190/307 | 1132/2032 | 15/72 | 53/101 | 16/18 |
+| `io.nekohasekai.sagernet.ui` | 4739/5183 | 29091/32791 | 1748/2568 | 931/1072 | 238/250 |
+| `io.nekohasekai.sagernet.widget` | 462/518 | 2539/3095 | 210/315 | 114/140 | 25/26 |
+| `io.nekohasekai.sagernet.ui.profile` | 1184/1272 | 7222/7943 | 221/339 | 216/255 | 42/42 |
+| `moe.matsuri.nb4a.ui` | 250/307 | 1457/2032 | 38/72 | 58/101 | 16/18 |
 | `io.nekohasekai.sagernet.fmt.v2ray` | 838/939 | 5434/6096 | 551/817 | 64/67 | 6/6 |
-| `moe.matsuri.nb4a.utils` | 291/365 | 1900/2413 | 132/210 | 48/60 | 5/6 |
-| `io.nekohasekai.sagernet.ktx` | 492/561 | 3760/4403 | 177/230 | 169/220 | 22/25 |
-| `io.nekohasekai.sagernet.utils` | 347/407 | 2337/2752 | 228/303 | 80/91 | 20/22 |
-| `io.nekohasekai.sagernet.bg` | 766/816 | 5000/5570 | 295/398 | 203/222 | 45/47 |
+| `moe.matsuri.nb4a.utils` | 294/365 | 1937/2413 | 136/210 | 48/60 | 5/6 |
+| `io.nekohasekai.sagernet.ktx` | 492/561 | 3768/4403 | 182/230 | 169/220 | 22/25 |
+| `io.nekohasekai.sagernet.utils` | 347/407 | 2340/2752 | 229/303 | 80/91 | 20/22 |
+| `io.nekohasekai.sagernet.bg` | 785/816 | 5105/5570 | 299/398 | 203/222 | 45/47 |
 | `io.nekohasekai.sagernet.database` | 967/985 | 11402/11765 | 426/485 | 595/633 | 35/37 |
 | `io.nekohasekai.sagernet.database.preference` | 136/153 | 873/962 | 65/75 | 65/70 | 7/10 |
 | `io.nekohasekai.sagernet.fmt.trojan_go` | 130/144 | 890/1002 | 81/120 | 11/13 | 3/3 |
 | `io.nekohasekai.sagernet.fmt` | 939/952 | 5890/6148 | 553/639 | 129/140 | 14/14 |
-| `io.nekohasekai.sagernet.bg.proto` | 407/419 | 2930/3149 | 144/206 | 89/101 | 16/17 |
+| `io.nekohasekai.sagernet.bg.proto` | 407/419 | 2930/3149 | 145/206 | 89/101 | 16/17 |
 | `io.nekohasekai.sagernet.fmt.hysteria` | 310/321 | 2100/2202 | 252/300 | 20/22 | 3/3 |
 | `moe.matsuri.nb4a.proxy.config` | 41/51 | 183/252 | 15/30 | 15/18 | 3/3 |
-| `io.nekohasekai.sagernet.fmt.internal` | 23/33 | 82/132 | 8/12 | 9/15 | 3/3 |
+| `io.nekohasekai.sagernet.fmt.internal` | 24/33 | 93/132 | 9/12 | 9/15 | 3/3 |
 | `io.nekohasekai.sagernet.fmt.trojan` | 24/33 | 146/194 | 14/24 | 8/10 | 3/3 |
 | `moe.matsuri.nb4a.proxy.neko` | 24/32 | 83/110 | 4/4 | 9/14 | 2/2 |
 | `moe.matsuri.nb4a.plugin` | 45/53 | 306/376 | 39/50 | 9/10 | 1/1 |
@@ -346,7 +346,7 @@ JaCoCo 行数低于源文件行数：只统计字节码里的可执行行。`Sin
 | `io.nekohasekai.sagernet.aidl` | 18/19 | 147/253 | 0/2 | 18/31 | 3/3 |
 | `com.github.shadowsocks.plugin` | 1/2 | 3/12 | 0/0 | 1/3 | 1/1 |
 | `moe.matsuri.nb4a.proxy` | 62/62 | 342/376 | 24/30 | 19/27 | 2/2 |
-| `io.nekohasekai.sagernet.plugin` | 49/49 | 285/299 | 31/34 | 11/14 | 3/3 |
+| `io.nekohasekai.sagernet.plugin` | 49/49 | 288/299 | 31/34 | 12/14 | 3/3 |
 
 ## 第一批盖住的解析与工具
 
@@ -936,18 +936,92 @@ Test 的 14820 在两次本仓库行数之间：比 14819 多 1，比 14821 少 
 - `MainActivity` 走了空 id 的 `displayFragmentWithId`、`onPostResume`、隐藏最近任务、方向键、已连接时的 `urlTest`、`getState` 抛 `RemoteException`、VPN 权限 snackbar、`PROXY_APPS` 的 reload、`SERVICE_MODE` 的 `onBinderDied`，以及坏的档案 URI 和订阅链接。API 33 的 `onCreate` 请求了 `POST_NOTIFICATIONS`。第 178–179 行和第 526 行两次各盖住一边。
 - 配置页在 `canStop` 时点了全局模式的 snackbar，打开再关掉测速对话框。双列菜单用拆下来的 holder 绑定，没有对已有列表调用 `switchLayoutMode()`。分组页把较高的项移到较低的项上，再走导出失败。关于页点过列表并跑了 `checkUpdate`，行数仍是 154/190。
 
-## 第十五批
+## 第十五批（设置控件、链式档案、服务错误）
 
-上一批验收基线是 Test 在 `26c78d6` 的 **14820/16338（90.71%）**，指令 **100473/113365**，分支 **6775/9564**。102 个测试，0 失败。不要把第十四批写成 14819 或 14821。下面是第十四批行数较低的那次本仓库 XML 的未覆盖排序，不是 Test 的页脚。`ConfigurationFragment` 第 209–210 行、`MainActivity` 第 178–179 行和第 526 行、`GuardedProcessPool` 第 44 行会单独翻。
+108 个 JVM 测试，0 失败，0 跳过（本批新增 6 个 Robolectric 测试）。两次 `SKIP_HEV=1 ./gradlew :app:clean :app:jacocoFirstPartyReport :app:compileOssReleaseKotlin --offline` 都通过。`syncFirstPartyClasses` 复制 1031 个 class 文件。分母没有变：行 16338，指令 113365，分支 9564，方法 3919，类 780。生产代码没有改。`libcore` 测试桩多了 `stunResult`，不进 APK。`compileOssReleaseKotlin --offline` 通过。
 
-1. **`ConfigurationFragment` 仍缺 190 行**（1397/1587；另一次 1399/1587）。第 209–210 行会单独翻。
-2. **`RouteSettingsActivity` 181/228**，`StatsBar` 155/197，`AboutFragment` 154/190。关于页这次点过，行数没动。
-3. **`BaseService` 226/251**。`exit` 仍只在 `restartProcessOverride == null` 时走到。`ProfileSettingsActivity` 208/233，`ChainSettingsActivity` 129/154，`GroupSettingsActivity` 295/316。
-4. **`StandardV2RaySettingsActivity` 138/172**，`ColorPickerPreference` 32/61，`StunActivity` 12/40，`Utils.kt` 131/158，`OutboundPreference` 13/40，`UrlTestPreference` 11/38，`LogcatFragment` 30/55，`LinkOrContentPreference` 10/34。
-5. **`CrashHandler` 69/90**，`WebviewFragment` 14/35，`AssetsActivity` 227/245，`WebDAVSettingsActivity` 119/136，`ServiceButton` 68/85，`AutoCollapseTextView` 0/17。
-6. **`BackupFragment` 492/506**，`MainActivity` 309/323（另一次 308/323），`ServiceNotification` 116/128，`DefaultNetworkListener` 67/76，`SagerConnection` 97/99，`GroupFragment` 316/322，`ConfigEditActivity` 97/106。`QuickEnableShortcut` 和 `QuickDisableShortcut` 各剩第 52 行。`Kryos` 31/31，`ReselectableSpinner` 19/19。
-7. **`GuardedProcessPool` 74/78**（另一次 75/78）。第 31–32 行在桌面 JVM 上探针到不了，第 107 行两次都没盖住。不要加宽 catch。
-8. **`StandardV2RayBean` 132/186**，`V2RayFmt` 529/569，`NGUtil` 61/95。`GroupUpdater` 85/86 第 109 行、`ProxyEntity` 364/366 第 250 和 543 行仍不可达。不要为了覆盖率改这些。
+上一批验收基线是 Test 在 `26c78d6` 的 **14820/16338（90.71%）**，指令 **100473/113365**，分支 **6775/9564**。102 个测试，0 失败。不要把第十四批写成 14819 或 14821。本批还没有 Test 验收。不按 ±2 收。下表较低的行页脚是本仓库暂记。
+
+| 指标 | 覆盖 | 未覆盖 | 合计 | 比例 | 相对第十四批验收 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 行（LINE） | 15152 | 1186 | 16338 | **92.74%** | +332 行；分母不变 |
+| 指令（INSTRUCTION） | 102285 | 11080 | 113365 | **90.23%** | +1812（相对 Test 的 100473） |
+| 分支（BRANCH） | 6915 | 2649 | 9564 | **72.30%** | +140（相对 Test 的 6775） |
+| 方法（METHOD） | 3401 | 518 | 3919 | **86.78%** | 本仓库 XML；Test 未另报 |
+| 类（CLASS） | 747 | 33 | 780 | **95.77%** | 本仓库 XML；Test 未另报 |
+
+行数较低的一次 XML：行 **15152/16338（92.74%）**，指令 **102285/113365（90.23%）**，分支 **6915/9564（72.30%）**。HTML 页脚：指令 11,080 of 113,365，分支 2,649 of 9,564，复杂度 2,894 of 8,899，行 1,186 of 16,338（覆盖 = 16338 − 1186 = 15152），方法 518 of 3,919，类 33 of 780。方法 3401/3919，类 747/780。相对 Test 的 14820，行 **+332**，指令 **+1812**，分支 **+140**。相对第十四批行数较低的本仓库 XML（14819），行 **+333**，指令 **+1789**（102285 − 100496），分支 **+138**（6915 − 6777）。
+
+另一次 XML：行 **15154/16338（92.75%）**，指令 **102271/113365（90.21%）**，分支 **6915/9564（72.30%）**。未覆盖行 1184，指令 11094，分支 2649。方法 3401/3919，类 747/780。那次 HTML：指令 11,094 of 113,365，分支 2,649 of 9,564，复杂度 2,894 of 8,899，行 1,184 of 16,338（覆盖 = 15154），方法 518 of 3,919，类 33 of 780。相对 Test 的 14820，行 **+334**，指令 **+1798**，分支 **+140**。
+
+两次差 2 行。指令方向相反：行数较低的一次指令多 14。分支相同。只动了三个文件：
+
+| 源文件 | 行数较高的一次 | 行数较低的一次 |
+| --- | ---: | ---: |
+| `ConfigurationFragment.kt` | 1402/1587，指令 8881 | 1397/1587，指令 8858 |
+| `GuardedProcessPool.kt` | 74/78，指令 666 | 75/78，指令 687 |
+| `ProfileSettingsActivity.kt` | 217/233，指令 1276 | 219/233，指令 1292 |
+
+`ConfigurationFragment` 多出来的 5 行是全局模式重载里的第 875–876、878–879、886 行，只在行数较高的一次盖住。第 887 行在行数较低的一次仍是部分覆盖。`GuardedProcessPool` 第 106 行只在行数较低的一次盖住；第 61 行从部分覆盖变成整行覆盖，所以那次指令更高。第 31–32 行和第 107 行两次都没盖住。第 44 行这次两次都盖住。`ProfileSettingsActivity` 第 56–57 行是未保存对话框的确定按钮，只在行数较低的一次盖住。
+
+和第十四批行数较低的本仓库 XML（行 14819、指令 100496、分支 6777，那份比 Test 的 14820 少 1 行）比，行数变了的包合计 **+333**。较低行页脚相对 Test 的 14820 是 **+332**。
+
+| 包或源文件 | 第十四批行数较低的一次 | 第十五批行数较低的一次 |
+| --- | ---: | ---: |
+| `widget` | 354/518 | **462/518**（+108） |
+| `ui` | 4658/5183 | **4739/5183**（+81） |
+| `ui.profile` | 1123/1272 | **1184/1272**（+61） |
+| `nb4a.ui` | 190/307 | **250/307**（+60） |
+| `bg` | 766/816 | **785/816**（+19） |
+| `nb4a.utils` | 291/365 | **294/365**（+3） |
+| `fmt.internal` | 23/33 | **24/33**（+1） |
+| `StatsBar.kt` | 155/197 | **187/197** |
+| `StandardV2RaySettingsActivity.kt` | 138/172 | **171/172** |
+| `StunActivity.kt` | 12/40 | **40/40** |
+| `ColorPickerPreference.kt` | 32/61 | **60/61** |
+| `UrlTestPreference.kt` | 11/38 | **35/38** |
+| `LinkOrContentPreference.kt` | 10/34 | **34/34** |
+| `OutboundPreference.kt` | 13/40 | **33/40** |
+| `LogcatFragment.kt` | 30/55 | **50/55** |
+| `BaseService.kt` | 226/251 | **244/251** |
+| `WebviewFragment.kt` | 14/35 | **31/35** |
+| `ChainSettingsActivity.kt` | 129/154 | **146/154** |
+| `AutoCollapseTextView.kt` | 0/17 | **15/17** |
+| `RouteSettingsActivity.kt` | 181/228 | **195/228** |
+| `ProfileSettingsActivity.kt` | 208/233 | **219/233**（另一次 217/233） |
+| `ServiceButton.kt` | 68/85 | **77/85** |
+| `QuickEnableShortcut.kt` / `QuickDisableShortcut.kt` | 15/16 | **16/16** |
+| `GuardedProcessPool.kt` | 74/78 | **75/78**（另一次 74/78） |
+| `ConfigurationFragment.kt` | 1397/1587 | **1397/1587**（另一次 1402/1587） |
+| `AboutFragment.kt` | 154/190 | **154/190** |
+| `Utils.kt` | 131/158 | **131/158**（指令 866→874，分支 35→40） |
+| `MainActivity.kt` | 309/323 | **309/323** |
+
+- `StunActivity` 走了失败对话框的确定和取消，以及 `stunResult` 成功时的结果文本。`Libcore.stunResult` 为 null 时仍返回空的失败结果。这个字段只在测试桩上。
+- `QuickEnableShortcut` 和 `QuickDisableShortcut` 在 `idle` 之前调用了空的 `stateChanged`，两份快捷方式都到 16/16。
+- `BaseService` 的启动协程盖住了 `UnknownHostException`、`PluginNotFoundException`，以及类名以 `proxyerror` 结尾和其它 `Throwable`。`CancellationException` 第 398 行和 `onFatal` 第 390–392 行仍缺。`exit` 第 122 行没有走。`restartProcessOverride` 为 null 时仍退出进程。
+- `GuardedProcessPool` 起了 `/bin/true` 并等过 1200 毫秒，没有先 `close`。第 106 行只在行数较低的一次盖住。第 107 行两次都没盖住。第 31–32 行仍在探针前面。没有加宽 catch。
+- `ProfileSettingsActivity` 走了未保存的放弃、返回、删除确认，以及缺 id 的 `saveAndExit`。确定按钮的第 56–57 行会单独翻。密码摘要第 371、375–379 行和 `createPreferences` 的 catch 仍缺。
+- `ChainSettingsActivity` 的滑动和拖动方向盖住了。`onMove` 第 93–97 行和 `onSwiped` 第 102–103 行仍缺：列表上的 holder 没有绑上，回调没有跑到。递归的 `testProfileContains` 第 203 行仍缺。
+- `RouteSettingsActivity` 从 181 到 195。删除对话框的第 206–214 行和第 360–363 行仍缺。
+- `StatsBar` 从 155 到 187。`HideAfterStart` 的第 236–243 行和第 114 行仍缺。
+- `AboutFragment` 仍是 **154/190**。反射拿到的关于列表没有把插件行、电池优化和第 263–265 行的更新按钮算进去。
+- `ConfigurationFragment` 较低行页脚仍是 **1397/1587**。剪贴板、新建 socks 和扫码跑过。全局模式重载那 5 行只在另一次盖住。
+- `Utils.kt` 行数仍是 131/158。`listenForPackageChanges` 的函数体盖住了，签名那一行没有。`forEachTry` 是 inline，定义处的行仍缺。API 24 的 `parseNumericAddress` 反射分支第 160–162 行仍缺。
+- `AutoCollapseTextView` 剩第 30 和 36 行的 catch。`ColorPickerPreference` 剩构造参数那一行。`LinkOrContentPreference` 34/34。`StandardV2RaySettingsActivity` 剩第 23 行。
+
+## 第十六批
+
+上一批还没有 Test 验收。本仓库暂记的较低行页脚是 **15152/16338（92.74%）**，指令 **102285/113365**，分支 **6915/9564**。108 个测试，0 失败。上一批已经验收的基线是 Test 在 `26c78d6` 的 **14820/16338（90.71%）**，指令 **100473/113365**，分支 **6775/9564**。不要把第十四批写成 14819 或 14821，也不要把第十五批写成 15154。下面是第十五批行数较低的那次本仓库 XML，未覆盖行按源文件合计。`ConfigurationFragment` 第 875–876、878–879、886 行，`GuardedProcessPool` 第 106 行，`ProfileSettingsActivity` 第 56–57 行会单独翻。
+
+1. **`ConfigurationFragment` 仍缺 190 行**（1397/1587；另一次 1402/1587）。
+2. **`StandardV2RayBean` 132/186**，`V2RayFmt` 529/569，`NGUtil` 61/95。`AboutFragment` 仍是 154/190。
+3. **`RouteSettingsActivity` 195/228**，`Utils.kt` 131/158，`GroupSettingsActivity` 295/316，`CrashHandler` 69/90。
+4. **`AssetsActivity` 227/245**，`WebDAVSettingsActivity` 119/136，`VpnRequestActivity` 16/32，`Preferences.kt` 69/85，`BackupFragment` 492/506，`MainActivity` 309/323，`ProfileSettingsActivity` 219/233（另一次 217/233）。
+5. **`StatsBar` 187/197** 仍缺 `HideAfterStart`。`ServiceNotification` 116/128，`DefaultNetworkListener` 67/76，`ChainSettingsActivity` 146/154 仍缺 `onMove` / `onSwiped`。
+6. **`BaseService` 244/251**。剩下第 122 行的 `exit`、第 390–392 行的 `onFatal`，以及第 398 行的 `CancellationException`。
+7. **`GuardedProcessPool` 75/78**（另一次 74/78）。第 31–32 行在桌面 JVM 上探针到不了，第 107 行两次都没盖住。不要加宽 catch。
+8. **`GroupUpdater` 85/86 第 109 行**、`ProxyEntity` 364/366 第 250 和 543 行仍不可达。不要为了覆盖率改这些。
 9. **`libcore` Go** 约 1927 行，没有 JaCoCo 入口，也没有 `_test.go`。`replace` 指向的 `../../sing-box` 和 `../../libneko` 不在本仓库。
 
 ## `libcore` Go
@@ -984,8 +1058,8 @@ Test 的 14820 在两次本仓库行数之间：比 14819 多 1，比 14821 少 
 - 没有把 Room 数据库放进单元测试。DAO 覆盖口为 null 时仍打开 Room。Robolectric 测试在 `super.onCreate()` 之前放上内存 DAO。
 - 没有改 WireGuard `mtu` 为空时 `clone()` 会 NPE 的现有行为。
 - 没有改 `handleWebviewDir` 在 API 28 以下直接返回的行为，也没有改锁文件路径的拼接。API 29 的沙箱跑过函数本体。
-- 没有改 `VpnService.establishTun` 的组网逻辑。地址、路由、DNS 和 `establish` 能跑完，是因为测试影子替换了 `VpnService.Builder` 和 `Os.inet_pton`。这两个影子加上 `ShadowResolvingNetwork` 挂在第七到第十四批的 Robolectric 测试上。空白域名会让这个影子抛 `UnknownHostException`，其它域名仍返回 `127.0.0.1`。`ShadowOsAddress.kill` 在第九到第十四批替换 `Os.kill`，避免桌面 JVM 向真实 pid 发信号。`ShadowProcessPhoenix` 在第十到第十四批，并且要 `instrumentedPackages` 含 `com.jakewharton.processphoenix`。`ShadowDnsResolver` 在第十二到第十四批，把 `DnsResolver` 的回调拉回调用线程。
+- 没有改 `VpnService.establishTun` 的组网逻辑。地址、路由、DNS 和 `establish` 能跑完，是因为测试影子替换了 `VpnService.Builder` 和 `Os.inet_pton`。这两个影子加上 `ShadowResolvingNetwork` 挂在第七到第十五批的 Robolectric 测试上。空白域名会让这个影子抛 `UnknownHostException`，其它域名仍返回 `127.0.0.1`。`ShadowOsAddress.kill` 在第九到第十五批替换 `Os.kill`，避免桌面 JVM 向真实 pid 发信号。`ShadowProcessPhoenix` 在第十到第十五批，并且要 `instrumentedPackages` 含 `com.jakewharton.processphoenix`。`ShadowDnsResolver` 在第十二到第十五批，把 `DnsResolver` 的回调拉回调用线程。
 - 没有把 `TrojanBean` 的 `sni` 分支调到 `StandardV2RayBean` 前面。那一行在现有类型层次上到不了，调换会改变 `security != "tls"` 时的赋值。
 - 没有克隆 `../../sing-box` 和 `../../libneko`，没有把 Go 覆盖率并进 JaCoCo。
 - 没有把 `PluginManager.initOverride`、`JavaUtil.lockProbe`、`PublicDatabase.kvPairDaoOverride`、`GuardedProcessPool.pidReader`、`BaseService.Binder.restartProcessOverride` 的生产默认值改掉，也没有把 `HevTunRuntime` 的 native hook 默认成空实现。这些口子为 null，或仍指向 `HevTunNative` 时，设备和以前一样。`Libcore.httpBody` / `httpHeader` 为空时，桩仍返回空正文且不写文件。`ExchangeContext.successFailure` / `errnoFailure` 为 null 时，桩上的 `success` 和 `errnoCode` 仍是空操作。`Libcore.urlTestFailure` 为 null 时，桩上的 `urlTest` 仍返回 0。`Libcore.stunResult` 为 null 时，桩上的 `stunTest` 仍返回空的失败结果。这些字段只在测试桩上。
-- 本地导入的确定按钮会走到 `triggerFullRestart`。`restartProcessOverride` 为 null 时，那条仍 `Runtime.exit(0)`。测试里换成计数，所以第十到第十四批没有杀掉测试进程。WebDAV 恢复的确定按钮直接调用 `ProcessPhoenix.triggerRebirth`。
+- 本地导入的确定按钮会走到 `triggerFullRestart`。`restartProcessOverride` 为 null 时，那条仍 `Runtime.exit(0)`。测试里换成计数，所以第十到第十五批没有杀掉测试进程。WebDAV 恢复的确定按钮直接调用 `ProcessPhoenix.triggerRebirth`。
