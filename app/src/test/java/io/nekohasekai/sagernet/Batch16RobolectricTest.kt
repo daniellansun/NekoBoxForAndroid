@@ -114,7 +114,21 @@ class Batch16RobolectricTest {
 
     @Before
     fun drainStaleMain() {
+        clearStaleListeners()
         idleMain()
+    }
+
+    private fun clearStaleListeners() {
+        clearListenerList(ProfileManager, "listeners")
+        clearListenerList(ProfileManager, "ruleListeners")
+        clearListenerList(GroupManager, "listeners")
+    }
+
+    private fun clearListenerList(owner: Any, name: String) {
+        val field = owner.javaClass.getDeclaredField(name)
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        (field.get(owner) as MutableList<Any>).clear()
     }
 
     @After
