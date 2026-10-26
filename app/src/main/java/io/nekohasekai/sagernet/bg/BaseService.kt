@@ -26,6 +26,7 @@ import libcore.Libcore
 import moe.matsuri.nb4a.Protocols
 import moe.matsuri.nb4a.utils.Util
 import java.net.UnknownHostException
+import java.util.concurrent.ConcurrentHashMap
 
 class BaseService {
 
@@ -106,7 +107,8 @@ class BaseService {
             }
         }
 
-        val callbackIdMap = mutableMapOf<ISagerNetServiceCallback, Int>()
+        // Binder threads register callbacks while the traffic loop reads this map.
+        val callbackIdMap = ConcurrentHashMap<ISagerNetServiceCallback, Int>()
 
         override val coroutineContext = Dispatchers.Main.immediate + Job()
 
@@ -190,6 +192,13 @@ class BaseService {
     }
 
     interface Interface {
+        companion object {
+            // Null in production. Tests suspend here so stop can cancel a
+            // connecting job before notification, process, or core startup.
+            @Volatile
+            internal var connectPause: (suspend () -> Unit)? = null
+        }
+
         val data: Data
         val tag: String
         fun createNotification(profileName: String): ServiceNotification
@@ -377,8 +386,12 @@ class BaseService {
             }
 
             data.changeState(State.Connecting)
-            runOnMainDispatcher {
+            // stopRunner joins this job. It used to be discarded, so a stop during
+            // connect left the startup coroutine running.
+            data.connectingJob = runOnMainDispatcher {
                 try {
+                    val pause = connectPause
+                    if (pause != null) pause()
                     data.notification = createNotification(ServiceNotification.genTitle(profile))
 
                     Executable.killAll()    // clean up old processes

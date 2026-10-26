@@ -2,13 +2,15 @@ package libcore
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"os"
-        "path/filepath"
+	"path/filepath"
+	"strings"
 
-	"github.com/ulikunitz/xz"
 	"github.com/sagernet/sing/common"
-        E "github.com/sagernet/sing/common/exceptions"
+	E "github.com/sagernet/sing/common/exceptions"
+	"github.com/ulikunitz/xz"
 )
 
 func Unxz(archive string, path string) error {
@@ -16,19 +18,22 @@ func Unxz(archive string, path string) error {
 	if err != nil {
 		return err
 	}
+	defer i.Close()
+
 	r, err := xz.NewReader(i)
 	if err != nil {
-		i.Close()
 		return err
 	}
 	o, err := os.Create(path)
 	if err != nil {
-		i.Close()
 		return err
 	}
-	_, err = io.Copy(o, r)
-	i.Close()
-	return err
+	_, copyErr := io.Copy(o, r)
+	closeErr := o.Close()
+	if copyErr != nil {
+		return copyErr
+	}
+	return closeErr
 }
 
 func Unzip(archive string, path string) error {
@@ -44,7 +49,10 @@ func Unzip(archive string, path string) error {
 	}
 
 	for _, file := range r.File {
-		filePath := filepath.Join(path, file.Name)
+		filePath, err := zipEntryPath(path, file.Name)
+		if err != nil {
+			return err
+		}
 
 		if file.FileInfo().IsDir() {
 			err = os.MkdirAll(filePath, os.ModePerm)
@@ -75,4 +83,18 @@ func Unzip(archive string, path string) error {
 	}
 
 	return nil
+}
+
+// zipEntryPath rejects absolute names and ".." so an archive cannot write outside root.
+func zipEntryPath(root, name string) (string, error) {
+	if name == "" || filepath.IsAbs(name) {
+		return "", fmt.Errorf("zip entry %q escapes destination", name)
+	}
+	cleanedRoot := filepath.Clean(root)
+	target := filepath.Join(cleanedRoot, name)
+	rel, err := filepath.Rel(cleanedRoot, target)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("zip entry %q escapes destination", name)
+	}
+	return target, nil
 }

@@ -200,10 +200,15 @@ func (b *BoxInstance) SetV2rayStats(outbounds string) {
 }
 
 func (b *BoxInstance) QueryStats(tag, direct string) int64 {
-	if b.v2api == nil {
+	// SetV2rayStats writes v2api under b.access. Copy the pointer before use so
+	// the traffic loop does not race that write.
+	b.access.Lock()
+	api := b.v2api
+	b.access.Unlock()
+	if api == nil {
 		return 0
 	}
-	return b.v2api.QueryStats(fmt.Sprintf("outbound>>>%s>>>traffic>>>%s", tag, direct))
+	return api.QueryStats(fmt.Sprintf("outbound>>>%s>>>traffic>>>%s", tag, direct))
 }
 
 func (b *BoxInstance) SelectOutbound(tag string) bool {

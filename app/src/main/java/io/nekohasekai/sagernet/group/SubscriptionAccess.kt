@@ -9,6 +9,7 @@ import io.nekohasekai.sagernet.database.SagerDatabase
 import io.nekohasekai.sagernet.database.SubscriptionBean
 import io.nekohasekai.sagernet.ktx.USER_AGENT
 import io.nekohasekai.sagernet.ktx.app
+import io.nekohasekai.sagernet.ktx.isHttpOrHttpsUrl
 import libcore.Libcore
 import moe.matsuri.nb4a.utils.Util
 
@@ -34,7 +35,7 @@ internal class SubscriptionFetch(
 
 internal object ProductionSubscriptionClient : SubscriptionClient {
     override fun fetch(subscription: SubscriptionBean): SubscriptionFetch {
-        val response = Libcore.newHttpClient().apply {
+        val client = Libcore.newHttpClient().apply {
             trySocks5(
                 DataStore.mixedPort,
                 DataStore.mixedInboundUser,
@@ -44,18 +45,25 @@ internal object ProductionSubscriptionClient : SubscriptionClient {
             when (DataStore.appTLSVersion) {
                 "1.3" -> restrictedTLS()
             }
-        }.newRequest().apply {
-            if (DataStore.allowInsecureOnRequest) {
-                allowInsecure()
-            }
-            setURL(subscription.link)
-            setUserAgent(subscription.customUserAgent.takeIf { it.isNotBlank() } ?: USER_AGENT)
-        }.execute()
-        return SubscriptionFetch(
-            Util.getStringBox(response.contentString),
-            Util.getStringBox(response.getHeader("Subscription-Userinfo")),
-            Util.getStringBox(response.getHeader("content-disposition")),
-        )
+        }
+        try {
+            val response = client.newRequest().apply {
+                if (DataStore.allowInsecureOnRequest) {
+                    allowInsecure()
+                }
+                val link = subscription.link?.trim().orEmpty()
+                if (!isHttpOrHttpsUrl(link)) error("Unsupported subscription URL")
+                setURL(link)
+                setUserAgent(subscription.customUserAgent.takeIf { it.isNotBlank() } ?: USER_AGENT)
+            }.execute()
+            return SubscriptionFetch(
+                Util.getStringBox(response.contentString),
+                Util.getStringBox(response.getHeader("Subscription-Userinfo")),
+                Util.getStringBox(response.getHeader("content-disposition")),
+            )
+        } finally {
+            client.close()
+        }
     }
 
     override fun readContent(link: String): String? = readContentText(link)
@@ -68,9 +76,9 @@ internal object ProductionSubscriptionClient : SubscriptionClient {
 /** Production still reads the app resources. Tests replace the lambdas. */
 @Volatile
 internal var readContentText: (String) -> String? = { link ->
-    app.contentResolver.openInputStream(link.toUri())
-        ?.bufferedReader()
-        ?.readText()
+    app.contentResolver.openInputStream(link.toUri())?.use { input ->
+        input.bufferedReader().use { it.readText() }
+    }
 }
 
 @Volatile

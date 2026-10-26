@@ -57,12 +57,12 @@ class GuardedProcessPool(private val onFatal: suspend (IOException) -> Unit) : C
             val exitChannel = Channel<Int>()
             try {
                 while (true) {
-                    thread(name = "stderr-$cmdName") {
+                    thread(name = "stderr-$cmdName", isDaemon = true) {
                         streamLogger(process.errorStream) { Libcore.nekoLogPrintln("[$cmdName] $it") }
                     }
-                    thread(name = "stdout-$cmdName") {
+                    thread(name = "stdout-$cmdName", isDaemon = true) {
                         streamLogger(process.inputStream) { Libcore.nekoLogPrintln("[$cmdName] $it") }
-                        // this thread also acts as a daemon thread for waitFor
+                        // Daemon: a stuck reader must not keep the process alive after the guard scope is gone.
                         runBlocking { exitChannel.send(process.waitFor()) }
                     }
                     val startTime = SystemClock.elapsedRealtime()

@@ -64,12 +64,19 @@ object SendLog {
                 SagerNet.application.cacheDir,
                 "neko.log"
             )
-            val len = file.length()
-            val stream = FileInputStream(file)
-            if (max in 1 until len) {
-                stream.skip(len - max) // TODO string?
+            FileInputStream(file).use { stream ->
+                val len = file.length()
+                if (max in 1 until len) {
+                    // skip() may return short. Loop so the tail length stays `max`.
+                    var remaining = len - max
+                    while (remaining > 0L) {
+                        val skipped = stream.skip(remaining)
+                        if (skipped <= 0L) break
+                        remaining -= skipped
+                    }
+                }
+                stream.readBytes()
             }
-            stream.use { it.readBytes() }
         } catch (e: Exception) {
             e.stackTraceToString().toByteArray()
         }

@@ -19,7 +19,13 @@ object PackageCache {
     lateinit var installedPluginPackages: Map<String, PackageInfo>
     lateinit var installedApps: Map<String, ApplicationInfo>
     lateinit var packageMap: Map<String, Int>
-    val uidMap = HashMap<Int, HashSet<String>>()
+
+    /**
+     * Replaced as a whole on reload. Readers keep the previous snapshot instead of
+     * walking a map that [reload] is clearing.
+     */
+    @Volatile
+    var uidMap: Map<Int, Set<String>> = emptyMap()
     val loaded = Mutex(true)
     var registerd = AtomicBoolean(false)
 
@@ -57,11 +63,12 @@ object PackageCache {
         val installed = app.packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
         installedApps = installed.associateBy { it.packageName }
         packageMap = installed.associate { it.packageName to it.uid }
-        uidMap.clear()
+        val nextUidMap = HashMap<Int, HashSet<String>>()
         for (info in installed) {
             val uid = info.uid
-            uidMap.getOrPut(uid) { HashSet() }.add(info.packageName)
+            nextUidMap.getOrPut(uid) { HashSet() }.add(info.packageName)
         }
+        uidMap = nextUidMap
     }
 
     operator fun get(uid: Int) = uidMap[uid]
@@ -82,7 +89,7 @@ object PackageCache {
         }
     }
 
-    private val labelMap = mutableMapOf<String, String>()
+    private val labelMap = java.util.concurrent.ConcurrentHashMap<String, String>()
     fun loadLabel(packageName: String): String {
         var label = labelMap[packageName]
         if (label != null) return label

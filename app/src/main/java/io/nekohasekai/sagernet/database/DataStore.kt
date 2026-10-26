@@ -145,7 +145,9 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var concurrentDial by booleanPref(::configPrefs, Key.CONCURRENT_DIAL)
 
     var allowAccess by booleanPref(::configPrefs, Key.ALLOW_ACCESS)
-    var speedInterval by stringToIntPref(::configPrefs, Key.SPEED_INTERVAL)
+    // Same fallback the settings screen already shows (global_preferences.xml).
+    // An unset key used to read as 0, which disables the traffic loop.
+    var speedInterval by stringToIntPref(::configPrefs, Key.SPEED_INTERVAL) { 1000 }
     var showGroupInNotification by booleanPref(::configPrefs, "showGroupInNotification")
 
     var globalCustomConfig by stringPref(::configPrefs, Key.GLOBAL_CUSTOM_CONFIG) { "" }
@@ -161,8 +163,13 @@ object DataStore : OnPreferenceDataStoreChangeListener {
     var acquireWakeLock by booleanPref(::configPrefs, Key.ACQUIRE_WAKE_LOCK)
     var hideFromRecentApps by booleanPref(::configPrefs, Key.HIDE_FROM_RECENT_APPS)
 
-    var rulesGeositeUrl by stringPref(::configPrefs, Key.RULES_GEOSITE_URL) { "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db" }
-    var rulesGeoipUrl by stringPref(::configPrefs, Key.RULES_GEOIP_URL) { "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db" }
+    // Match global_preferences.xml. The previous fallbacks swapped the two files.
+    var rulesGeositeUrl by stringPref(::configPrefs, Key.RULES_GEOSITE_URL) {
+        "https://github.com/SagerNet/sing-geosite/releases/latest/download/geosite.db"
+    }
+    var rulesGeoipUrl by stringPref(::configPrefs, Key.RULES_GEOIP_URL) {
+        "https://github.com/SagerNet/sing-geoip/releases/latest/download/geoip.db"
+    }
     var rulesUpdateInterval by stringPref(::configPrefs, Key.RULES_UPDATE_INTERVAL) { "0" } // 默认为0，不自动更新
 
     // hopefully hashCode = mHandle doesn't change, currently this is true from KitKat to Nougat
