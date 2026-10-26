@@ -214,15 +214,15 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
 
         fun checkUpdate(checkPreview: Boolean) {
             runOnIoDispatcher {
+                val client = Libcore.newHttpClient().apply {
+                    modernTLS()
+                    trySocks5(
+                        DataStore.mixedPort,
+                        DataStore.mixedInboundUser,
+                        DataStore.mixedInboundPass
+                    )
+                }
                 try {
-                    val client = Libcore.newHttpClient().apply {
-                        modernTLS()
-                        trySocks5(
-                            DataStore.mixedPort,
-                            DataStore.mixedInboundUser,
-                            DataStore.mixedInboundPass
-                        )
-                    }
                     val response = client.newRequest().apply {
                         if (checkPreview) {
                             setURL("https://api.github.com/repos/starifly/NekoBoxForAndroid/releases/tags/preview")
@@ -279,6 +279,8 @@ class AboutFragment : ToolbarFragment(R.layout.layout_about) {
                     runOnMainDispatcher {
                         Toast.makeText(app, e.readableMessage, Toast.LENGTH_SHORT).show()
                     }
+                } finally {
+                    client.close()
                 }
             }
         }

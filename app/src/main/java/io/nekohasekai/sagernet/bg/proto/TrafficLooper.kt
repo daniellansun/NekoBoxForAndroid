@@ -20,6 +20,14 @@ class TrafficLooper
 
     companion object {
         private const val TRAFFIC_BATCH_SIZE = 500
+
+        /**
+         * Skip binder/notification speed posts when rates and session totals are
+         * unchanged. Keeps the first post (previous == null).
+         */
+        internal fun shouldPostSpeed(previous: SpeedDisplayData?, next: SpeedDisplayData): Boolean {
+            return previous != next
+        }
     }
 
     private var job: Job? = null
@@ -27,10 +35,12 @@ class TrafficLooper
     private val tagMap = mutableMapOf<String, TrafficUpdater.TrafficLooperData>() // tag to 1 data
     private val stateMutex = Mutex()
     private var trafficUpdater: TrafficUpdater? = null
+    private var lastPostedSpeed: SpeedDisplayData? = null
 
     private data class LoopSnapshot(
         val speed: SpeedDisplayData,
         val trafficUpdates: ArrayList<TrafficData>,
+        val postToForeground: Boolean,
     )
 
     private suspend fun <T> withStateLock(block: suspend () -> T): T {
@@ -47,7 +57,7 @@ class TrafficLooper
         job = null
         // finally traffic post
         if (!DataStore.profileTrafficStatistics) return
-        withStateLock {
+        val batches = withStateLock {
             val traffic = mutableMapOf<Long, TrafficData>()
             data.proxy?.config?.trafficMap?.forEach { (_, ents) ->
                 for (ent in ents) {
@@ -63,13 +73,17 @@ class TrafficLooper
                     )
                 }
             }
-            if (traffic.isNotEmpty()) {
-                val batches = traffic.values.chunked(TRAFFIC_BATCH_SIZE).map {
+            if (traffic.isEmpty()) {
+                emptyList()
+            } else {
+                traffic.values.chunked(TRAFFIC_BATCH_SIZE).map {
                     TrafficDataBatch(ArrayList(it))
                 }
-                data.binder.broadcast { callback ->
-                    batches.forEach { callback.cbTrafficUpdate(it) }
-                }
+            }
+        }
+        if (batches.isNotEmpty()) {
+            data.binder.broadcast { callback ->
+                batches.forEach { callback.cbTrafficUpdate(it) }
             }
         }
         Logs.d("finally traffic post done")
@@ -114,7 +128,7 @@ class TrafficLooper
         val targetIds = profileIds.asSequence().filter { it > 0L }.toHashSet()
         if (targetIds.isEmpty()) return
 
-        withStateLock {
+        val batches = withStateLock {
             trafficUpdater?.updateAll()
             val changed = linkedMapOf<Long, TrafficData>()
             idMap.forEach { (id, item) ->
@@ -144,15 +158,15 @@ class TrafficLooper
                 changed[id] = TrafficData(id = id, rx = 0L, tx = 0L)
             }
             ProfileManager.resetTraffic(targetIds.toLongArray())
-            val batches = changed.values.chunked(TRAFFIC_BATCH_SIZE).map {
+            changed.values.chunked(TRAFFIC_BATCH_SIZE).map {
                 TrafficDataBatch(ArrayList(it))
             }
-            data.binder.broadcast { callback ->
-                if (data.binder.callbackIdMap[callback] ==
-                    SagerConnection.CONNECTION_ID_MAIN_ACTIVITY_FOREGROUND
-                ) {
-                    batches.forEach { callback.cbTrafficUpdate(it) }
-                }
+        }
+        data.binder.broadcast { callback ->
+            if (data.binder.callbackIdMap[callback] ==
+                SagerConnection.CONNECTION_ID_MAIN_ACTIVITY_FOREGROUND
+            ) {
+                batches.forEach { callback.cbTrafficUpdate(it) }
             }
         }
     }
@@ -178,6 +192,8 @@ class TrafficLooper
                 continue
             }
 
+            // Hold the state lock only for map/stats work. Binder IPC used to run
+            // inside the lock and stalled selectMain / resetTraffic / stop.
             val snapshot = withStateLock {
                 if (trafficUpdater == null) {
                     idMap.clear()
@@ -235,7 +251,7 @@ class TrafficLooper
                         }
                     }
                 }
-                val snapshot = LoopSnapshot(
+                LoopSnapshot(
                     speed = SpeedDisplayData(
                         mainTxRate,
                         mainRxRate,
@@ -245,32 +261,40 @@ class TrafficLooper
                         mainRx
                     ),
                     trafficUpdates = trafficUpdates,
-                )
-                if (data.state == BaseService.State.Connected
-                    && data.binder.callbackIdMap.containsValue(
-                        SagerConnection.CONNECTION_ID_MAIN_ACTIVITY_FOREGROUND
-                    )
-                ) {
-                    data.binder.broadcast { callback ->
-                        if (data.binder.callbackIdMap[callback] ==
+                    postToForeground = data.state == BaseService.State.Connected
+                        && data.binder.callbackIdMap.containsValue(
                             SagerConnection.CONNECTION_ID_MAIN_ACTIVITY_FOREGROUND
-                        ) {
+                        ),
+                )
+            }
+            currentCoroutineContext().ensureActive()
+
+            val speedChanged = shouldPostSpeed(lastPostedSpeed, snapshot.speed)
+            if (snapshot.postToForeground && (speedChanged || snapshot.trafficUpdates.isNotEmpty())) {
+                data.binder.broadcast { callback ->
+                    if (data.binder.callbackIdMap[callback] ==
+                        SagerConnection.CONNECTION_ID_MAIN_ACTIVITY_FOREGROUND
+                    ) {
+                        if (speedChanged) {
                             callback.cbSpeedUpdate(snapshot.speed)
-                            if (snapshot.trafficUpdates.isNotEmpty()) {
-                                snapshot.trafficUpdates.chunked(TRAFFIC_BATCH_SIZE).forEach {
-                                    callback.cbTrafficUpdate(TrafficDataBatch(ArrayList(it)))
-                                }
+                        }
+                        if (snapshot.trafficUpdates.isNotEmpty()) {
+                            snapshot.trafficUpdates.chunked(TRAFFIC_BATCH_SIZE).forEach {
+                                callback.cbTrafficUpdate(TrafficDataBatch(ArrayList(it)))
                             }
                         }
                     }
                 }
-                snapshot
             }
-            currentCoroutineContext().ensureActive()
 
             // ServiceNotification
             data.notification?.apply {
-                if (listenPostSpeed) postNotificationSpeedUpdate(snapshot.speed)
+                if (listenPostSpeed && speedChanged) {
+                    postNotificationSpeedUpdate(snapshot.speed)
+                }
+            }
+            if (speedChanged) {
+                lastPostedSpeed = snapshot.speed
             }
 
             delay(delayMs)

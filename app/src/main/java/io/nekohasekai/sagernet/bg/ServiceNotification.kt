@@ -216,6 +216,10 @@ class ServiceNotification(
         } else {
             (service as Service).stopForeground(true)
         }
-        service.unregisterReceiver(this)
+        // stopRunner can race a second destroy after the receiver is already gone.
+        try {
+            service.unregisterReceiver(this)
+        } catch (_: IllegalArgumentException) {
+        }
     }
 }

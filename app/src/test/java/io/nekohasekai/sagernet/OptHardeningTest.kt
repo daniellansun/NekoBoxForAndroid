@@ -1,5 +1,7 @@
 package io.nekohasekai.sagernet
 
+import io.nekohasekai.sagernet.aidl.SpeedDisplayData
+import io.nekohasekai.sagernet.bg.proto.TrafficLooper
 import io.nekohasekai.sagernet.database.DataStore
 import io.nekohasekai.sagernet.database.MemoryKvDao
 import io.nekohasekai.sagernet.database.preference.RoomPreferenceDataStore
@@ -94,5 +96,14 @@ class OptHardeningTest {
             DataStore.configurationStoreOverride = previousConfig
             DataStore.profileCacheStoreOverride = previousCache
         }
+    }
+
+    @Test
+    fun trafficSpeedPostSkipsUnchangedSnapshots() {
+        val first = SpeedDisplayData(1, 2, 3, 4, 5, 6)
+        assertTrue(TrafficLooper.shouldPostSpeed(null, first))
+        assertFalse(TrafficLooper.shouldPostSpeed(first, SpeedDisplayData(1, 2, 3, 4, 5, 6)))
+        assertTrue(TrafficLooper.shouldPostSpeed(first, SpeedDisplayData(1, 2, 3, 4, 5, 7)))
+        assertTrue(TrafficLooper.shouldPostSpeed(first, SpeedDisplayData(9, 2, 3, 4, 5, 6)))
     }
 }
