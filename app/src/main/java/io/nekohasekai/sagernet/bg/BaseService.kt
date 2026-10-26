@@ -192,6 +192,13 @@ class BaseService {
     }
 
     interface Interface {
+        companion object {
+            // Null in production. Tests suspend here so stop can cancel a
+            // connecting job before notification, process, or core startup.
+            @Volatile
+            internal var connectPause: (suspend () -> Unit)? = null
+        }
+
         val data: Data
         val tag: String
         fun createNotification(profileName: String): ServiceNotification
@@ -383,6 +390,8 @@ class BaseService {
             // connect left the startup coroutine running.
             data.connectingJob = runOnMainDispatcher {
                 try {
+                    val pause = connectPause
+                    if (pause != null) pause()
                     data.notification = createNotification(ServiceNotification.genTitle(profile))
 
                     Executable.killAll()    // clean up old processes
