@@ -106,4 +106,40 @@ class OptHardeningTest {
         assertTrue(TrafficLooper.shouldPostSpeed(first, SpeedDisplayData(1, 2, 3, 4, 5, 7)))
         assertTrue(TrafficLooper.shouldPostSpeed(first, SpeedDisplayData(9, 2, 3, 4, 5, 6)))
     }
+
+    @Test
+    fun trafficSpeedForceRefreshOnListenerReattach() {
+        assertFalse(
+            TrafficLooper.shouldForceSpeedRefresh(
+                wasListeningPostSpeed = true,
+                listenPostSpeed = true,
+                wasPostToForeground = true,
+                postToForeground = true,
+            )
+        )
+        assertTrue(
+            TrafficLooper.shouldForceSpeedRefresh(
+                wasListeningPostSpeed = false,
+                listenPostSpeed = true,
+                wasPostToForeground = true,
+                postToForeground = true,
+            )
+        )
+        assertTrue(
+            TrafficLooper.shouldForceSpeedRefresh(
+                wasListeningPostSpeed = true,
+                listenPostSpeed = true,
+                wasPostToForeground = false,
+                postToForeground = true,
+            )
+        )
+        assertFalse(
+            TrafficLooper.shouldForceSpeedRefresh(
+                wasListeningPostSpeed = true,
+                listenPostSpeed = false,
+                wasPostToForeground = true,
+                postToForeground = false,
+            )
+        )
+    }
 }

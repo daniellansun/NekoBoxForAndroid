@@ -60,12 +60,18 @@ class ProxyInstance(profile: ProxyEntity, var service: BaseService.Interface? = 
         // Assign and start under one lock so close() always sees a joinable looper
         // (or never starts one). The old DefaultDispatcher hand-off could start the
         // loop after close() had already finished.
+        // Own the SupervisorJob so a close-before-start path can cancel it
+        // instead of abandoning an unused scope (Test residual on 8261dab).
+        val scopeJob = SupervisorJob()
         val created = TrafficLooper(
             svc.data,
-            CoroutineScope(Dispatchers.Default + SupervisorJob()),
+            CoroutineScope(Dispatchers.Default + scopeJob),
         )
         synchronized(looperLock) {
-            if (closed) return
+            if (closed) {
+                scopeJob.cancel()
+                return
+            }
             looper = created
             created.start()
         }

@@ -28,6 +28,21 @@ class TrafficLooper
         internal fun shouldPostSpeed(previous: SpeedDisplayData?, next: SpeedDisplayData): Boolean {
             return previous != next
         }
+
+        /**
+         * After screen-off or leaving the foreground, the UI/notification may hold
+         * a last-rendered snapshot while [lastPostedSpeed] already matches the
+         * current rates. Force one post when either listener becomes active again.
+         */
+        internal fun shouldForceSpeedRefresh(
+            wasListeningPostSpeed: Boolean,
+            listenPostSpeed: Boolean,
+            wasPostToForeground: Boolean,
+            postToForeground: Boolean,
+        ): Boolean {
+            return (listenPostSpeed && !wasListeningPostSpeed) ||
+                (postToForeground && !wasPostToForeground)
+        }
     }
 
     private var job: Job? = null
@@ -36,6 +51,8 @@ class TrafficLooper
     private val stateMutex = Mutex()
     private var trafficUpdater: TrafficUpdater? = null
     private var lastPostedSpeed: SpeedDisplayData? = null
+    private var wasListeningPostSpeed = false
+    private var wasPostToForeground = false
 
     private data class LoopSnapshot(
         val speed: SpeedDisplayData,
@@ -269,7 +286,17 @@ class TrafficLooper
             }
             currentCoroutineContext().ensureActive()
 
-            val speedChanged = shouldPostSpeed(lastPostedSpeed, snapshot.speed)
+            val listenNow = data.notification?.listenPostSpeed == true
+            val forceRefresh = shouldForceSpeedRefresh(
+                wasListeningPostSpeed,
+                listenNow,
+                wasPostToForeground,
+                snapshot.postToForeground,
+            )
+            wasListeningPostSpeed = listenNow
+            wasPostToForeground = snapshot.postToForeground
+            val speedChanged = forceRefresh || shouldPostSpeed(lastPostedSpeed, snapshot.speed)
+            var deliveredSpeed = false
             if (snapshot.postToForeground && (speedChanged || snapshot.trafficUpdates.isNotEmpty())) {
                 data.binder.broadcast { callback ->
                     if (data.binder.callbackIdMap[callback] ==
@@ -277,6 +304,7 @@ class TrafficLooper
                     ) {
                         if (speedChanged) {
                             callback.cbSpeedUpdate(snapshot.speed)
+                            deliveredSpeed = true
                         }
                         if (snapshot.trafficUpdates.isNotEmpty()) {
                             snapshot.trafficUpdates.chunked(TRAFFIC_BATCH_SIZE).forEach {
@@ -291,9 +319,13 @@ class TrafficLooper
             data.notification?.apply {
                 if (listenPostSpeed && speedChanged) {
                     postNotificationSpeedUpdate(snapshot.speed)
+                    deliveredSpeed = true
                 }
             }
-            if (speedChanged) {
+            // Only advance the dedupe cursor when a consumer actually got the
+            // snapshot, so a screen-off / background period still refreshes on
+            // reattach even if rates moved while nobody was listening.
+            if (deliveredSpeed) {
                 lastPostedSpeed = snapshot.speed
             }
 
