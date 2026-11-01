@@ -7,10 +7,11 @@ if [ -z "$GOPATH" ]; then
     GOPATH=$(go env GOPATH)
 fi
 
-# Install gomobile (pinned; MatsuriDayo/gomobile master2 at the time of pinning)
-GOMOBILE_COMMIT=17d6af34f6bd6d7e1e428e0c652c8b54a46bda4f
+# Install gomobile (pinned; daniellansun/gomobile = MatsuriDayo master2 17d6af34
+# plus relative local-replace paths in the generated go.mod)
+GOMOBILE_COMMIT=00e7dc75c03bad26666bee9235d27bdadaa75f30
 if [ ! -f "$GOPATH/bin/gomobile-matsuri" ]; then
-    git clone https://github.com/MatsuriDayo/gomobile.git
+    git clone https://github.com/daniellansun/gomobile.git
     pushd gomobile
     git checkout --detach "$GOMOBILE_COMMIT" || exit 1
     [ "$(git rev-parse HEAD)" = "$GOMOBILE_COMMIT" ] || exit 1
