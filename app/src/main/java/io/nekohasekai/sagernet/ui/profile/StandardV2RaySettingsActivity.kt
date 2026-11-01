@@ -185,6 +185,8 @@ abstract class StandardV2RaySettingsActivity : ProfileSettingsActivity<StandardV
                 true
             }
         }
+
+        bindRealityFingerprintHint()
     }
 
     private fun updateMuxBrutal(enabled: Boolean) {

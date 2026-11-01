@@ -8,6 +8,7 @@ import io.nekohasekai.sagernet.R
 import io.nekohasekai.sagernet.database.preference.EditTextPreferenceModifiers
 import io.nekohasekai.sagernet.ktx.applyDefaultValues
 import io.nekohasekai.sagernet.ui.profile.ProfileSettingsActivity
+import io.nekohasekai.sagernet.ui.profile.bindRealityFingerprintHint
 import moe.matsuri.nb4a.proxy.PreferenceBinding
 import moe.matsuri.nb4a.proxy.PreferenceBindingManager
 import moe.matsuri.nb4a.proxy.Type
@@ -49,5 +50,6 @@ class AnyTLSSettingsActivity : ProfileSettingsActivity<AnyTLSBean>() {
         findPreference<EditTextPreference>("password")!!.apply {
             summaryProvider = PasswordSummaryProvider
         }
+        bindRealityFingerprintHint()
     }
 }

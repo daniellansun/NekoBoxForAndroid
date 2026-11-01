@@ -187,6 +187,14 @@
             app:key="utlsFingerprint"
             app:title="@string/utls_fingerprint"
             app:useSimpleSummaryProvider="true" />
+        <Preference
+            app:icon="@drawable/ic_baseline_info_24"
+            app:isPreferenceVisible="false"
+            app:key="realityFingerprintHint"
+            app:persistent="false"
+            app:selectable="false"
+            app:singleLineTitle="false"
+            app:title="@string/reality_fingerprint_hint" />
         <EditTextPreference
             app:icon="@drawable/ic_baseline_vpn_key_24"
             app:key="realityPubKey"
