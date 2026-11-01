@@ -34,4 +34,16 @@
 
     <issue id="InvalidPackage" severity="ignore" />
     <issue id="TrustAllX509TrustManager" severity="ignore" />
+
+    <!-- Remote/network version lookups: not hermetic and not stable between runs.
+         Report them without failing the build (informational is not promoted by warningsAsErrors). -->
+    <issue id="NewerVersionAvailable" severity="informational" />
+    <issue id="GradleDependency" severity="informational" />
+    <issue id="AndroidGradlePluginVersion" severity="informational" />
+    <issue id="GradleDynamicVersion" severity="informational" />
+    <issue id="PlaySdkIndexNonCompliant" severity="informational" />
+    <issue id="PlaySdkIndexGenericIssues" severity="informational" />
+    <issue id="PlaySdkIndexVulnerability" severity="informational" />
+    <issue id="RiskyLibrary" severity="informational" />
+    <issue id="OutdatedLibrary" severity="informational" />
 </lint>
