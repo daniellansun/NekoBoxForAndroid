@@ -120,6 +120,12 @@ fun Project.setupAppCommon() {
     val pwd = lp.getProperty("ALIAS_PASS") ?: System.getenv("ALIAS_PASS")
 
     android.apply {
+        // Keep the encrypted SDK dependency-info block out of the APK signing block
+        // and the bundle: it is re-encrypted randomly on every build.
+        dependenciesInfo {
+            includeInApk = false
+            includeInBundle = false
+        }
         if (keystorePwd != null) {
             signingConfigs {
                 create("release") {
@@ -127,6 +133,7 @@ fun Project.setupAppCommon() {
                     storePassword = keystorePwd
                     keyAlias = alias
                     keyPassword = pwd
+                    enableV3Signing = true
                 }
             }
         }
